@@ -11,7 +11,7 @@
             "runtimeArgs": [
                 "-r",
                 "ts-node/register",
-                "${file}"
+                "./test/index.ts"
             ],
         }
     ]

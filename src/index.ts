@@ -1,10 +1,7 @@
-import { Lex } from "./Lex";
-import { TerminalRule } from "./Rule";
+export { RuleCollection } from "./Rule";
+export type { Rule, DelayRule, TerminalOptions } from "./Rule";
 
-let lex = new Lex([
-    new TerminalRule(/(\d)\1/),
-    new TerminalRule(/test(\d)?/)
-]);
+export { TerminalAst, DelayAst } from "./Ast";
+export type { MoreAst, OptionalAst, RepeatAst } from "./Ast";
 
-let res = lex.match("11,test2,test");
-debugger;
+export type { ParserResult, Parser } from "./Parser";
