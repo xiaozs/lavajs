@@ -49,7 +49,7 @@ export class Parser<T extends typeof DelayAst> {
                 return {
                     ast: undefined,
                     ignoreAst: ignore,
-                    errorAst: res.retry,
+                    errorAst: res.retry.concat(this.astArr.toArray()),
                     errorToken: errors
                 }
             }
@@ -59,11 +59,10 @@ export class Parser<T extends typeof DelayAst> {
     private machAst(ast: Ast): MatchResult {
         let res = this.stack.last!.match(ast, this.push);
         loop: while (true) {
-            let retry = res.retry ?? [];
-            this.astArr.unshift(...retry);
-
             switch (res.state) {
                 case MatchState.continue:
+                    let retry = res.retry ?? [];
+                    this.astArr.unshift(...retry);
                     break loop;
                 case MatchState.success:
                 case MatchState.fail:

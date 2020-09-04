@@ -1,5 +1,5 @@
 import { Ast, DelayAst, TerminalAst, RepeatAst, MoreAst, OptionalAst, EndAst, ChildrenAst } from "./Ast";
-import type { Rule } from "./Rule";
+import type { Rule, TerminalRule } from "./Rule";
 
 export type MatchResult =
     | MatchFail
@@ -57,7 +57,7 @@ export class EndMatcher extends Matcher {
 }
 
 export class TerminalMatcher extends Matcher {
-    constructor(private ast: typeof TerminalAst) {
+    constructor(private rule: TerminalRule) {
         super();
     }
     match(ast: Ast): MatchResult {
@@ -68,7 +68,7 @@ export class TerminalMatcher extends Matcher {
             }
         }
 
-        if (ast instanceof this.ast) {
+        if (ast instanceof TerminalAst && ast.rule === this.rule) {
             return {
                 state: MatchState.success,
                 ast: [ast]
@@ -163,10 +163,10 @@ export class AndMatcher extends Matcher {
                         ast: this.leftAst.concat(res.ast)
                     }
                 }
-                if (res.state === MatchState.continue) {
+                if (res.state === MatchState.fail) {
                     return {
                         ...res,
-                        retry: this.leftAst.concat(res.retry ?? [])
+                        retry: this.leftAst.concat(res.retry)
                     }
                 }
                 return res;

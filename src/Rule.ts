@@ -44,14 +44,14 @@ export abstract class Rule {
     or(rule: Rule): Rule {
         return new OrRule(this, rule);
     }
-    repeat(rule: Rule): Rule {
-        return new RepeatRule(rule);
+    repeat(): Rule {
+        return new RepeatRule(this);
     }
-    more(rule: Rule): Rule {
-        return new MoreRule(rule);
+    more(): Rule {
+        return new MoreRule(this);
     }
-    optional(rule: Rule): Rule {
-        return new OptionalRule(rule);
+    optional(): Rule {
+        return new OptionalRule(this);
     }
 
     abstract getMatcher(): Matcher;
@@ -101,7 +101,7 @@ export class TerminalRule extends Rule {
     }
 
     getMatcher(): Matcher {
-        return new TerminalMatcher(this.options.ast);
+        return new TerminalMatcher(this);
     }
 }
 
