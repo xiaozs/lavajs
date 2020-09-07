@@ -1,7 +1,9 @@
-export { RuleCollection } from "./Rule";
-export type { Rule, DelayRule, TerminalOptions } from "./Rule";
-
-export { TerminalAst, DelayAst } from "./Ast";
+export { DelayAst, TerminalAst } from "./Ast";
 export type { MoreAst, OptionalAst, RepeatAst } from "./Ast";
 
-export type { ParserResult, Parser } from "./Parser";
+export { Lex, StreamLex } from "./Lex";
+
+export type { Parser, ParserResult, StreamParser } from "./Parser";
+
+export { RuleCollection } from "./Rule";
+export type { DelayRule, Rule, TerminalOptions } from "./Rule";
