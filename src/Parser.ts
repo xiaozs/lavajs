@@ -17,55 +17,106 @@ export interface ParserResult<T extends typeof DelayAst> {
 }
 
 export class Parser<T extends typeof DelayAst> {
-    private rootWithEnd: Rule;
-    private lex: Lex;
+    private streamParser: StreamParser<T>;
+    constructor(root: DelayRule<T>, rules: Rule[]) {
+        this.streamParser = new StreamParser(root, rules);
+    }
+
+    match(str: string, skipError = true): ParserResult<T> {
+        let res!: ParserResult<T>;
+
+        function getRes(r: ParserResult<T>) {
+            res = r;
+        }
+
+        this.streamParser.reset(skipError);
+        this.streamParser.on("end", getRes);
+        this.streamParser.match(str);
+        this.streamParser.end();
+        this.streamParser.off("end", getRes);
+
+        return res;
+    }
+}
+
+export class StreamParser<T extends typeof DelayAst>
+    extends EventEmmiter<{
+        error: [ParserResult<T>],
+        ignore: [ParserResult<T>],
+        end: [ParserResult<T>],
+
+        success: [ParserResult<T>],
+        fail: [ParserResult<T>],
+    }> {
+    private root: Rule;
+    private lex: StreamLex;
     private stack!: List<Matcher>;
     private astArr!: List<Ast>;
+    private res!: ParserResult<T>;
 
     private push(rule: Rule) {
         this.stack.push(rule.getMatcher());
     }
 
-    constructor(private root: DelayRule<T>, rules: Rule[]) {
-        this.rootWithEnd = root.and(new EndRule());
+    constructor(root: DelayRule<T>, rules: Rule[], private skipError = true) {
+        super();
         this.push = this.push.bind(this);
-        this.lex = new Lex(getTerminalRules(rules));
+
+        this.root = root.and(new EndRule());
+
+        this.onError = this.onError.bind(this);
+        this.onAst = this.onAst.bind(this);
+        this.onIgnore = this.onIgnore.bind(this);
+        this.onEnd = this.onEnd.bind(this);
+
+        this.lex = new StreamLex(getTerminalRules(rules));
+        this.lex.on("error", this.onError);
+        this.lex.on("ast", this.onAst);
+        this.lex.on("ignore", this.onIgnore);
+        this.lex.on("end", this.onEnd);
+
+        this.reset();
     }
 
-    match(str: string, skipError = true): ParserResult<T> {
-        let { ignore, errors } = this.reset(str);
-        let errorAst: Ast[] = [];
+    private onError(token: Token) {
+        this.res.errorToken.push(token);
+        this.trigger("error", this.res);
+    }
+    private onIgnore(ast: TerminalAst) {
+        this.res.ignoreAst.push(ast);
+        this.trigger("ignore", this.res);
+    }
+    private onEnd() {
+        this.onAst(new EndAst());
+        this.trigger("end", this.res)
+    }
+
+    private onAst(ast: Ast) {
+        this.astArr.push(ast);
         while (true) {
-            let ast = this.astArr.shift()!;
-            let res = this.machAst(ast);
+            let currentAst = this.astArr.shift();
+            if (!currentAst) break;
+
+            let res = this.machAst(currentAst);
             if (res.state === MatchState.success) {
-                errorAst.push(...res.retry ?? []);
-                return {
-                    ast: res.ast[0] as InstanceType<T>,
-                    ignoreAst: ignore,
-                    errorAst,
-                    errorToken: errors
-                }
+                this.res.ast = res.ast[0] as InstanceType<T>;
+                this.res.errorAst.push(...res.retry ?? []);
+                return this.trigger("success", this.res);
             }
             if (res.state === MatchState.fail) {
                 let e = res.retry.pop();
-                e && errorAst.push(e);
-                if (skipError) {
+                e && this.res.errorAst.push(e);
+                if (this.skipError) {
                     let lastAst = res.retry.pop();
                     if (lastAst) {
                         res.retry.push(...lastAst.toTerminalAst());
                     }
                     this.retry(res.retry);
-                    this.stack.push(this.rootWithEnd.getMatcher());
+                    this.stack.push(this.root.getMatcher());
                     continue;
                 }
 
-                return {
-                    ast: undefined,
-                    ignoreAst: ignore,
-                    errorAst,
-                    errorToken: errors
-                }
+                return this.trigger("fail", this.res);
             }
         }
     }
@@ -97,32 +148,25 @@ export class Parser<T extends typeof DelayAst> {
         this.astArr.unshift(...ast ?? []);
     }
 
-    private reset(str: string) {
-        let { ast, errors, ignore } = this.lex.match(str);
-
-        this.astArr = List.from<Ast>(ast);
-        this.astArr.push(new EndAst());
-
-        this.stack = new List<Matcher>();
-        this.stack.push(this.rootWithEnd.getMatcher());
-
-        return { errors, ignore };
-    }
-}
-
-export class StreamParser<T extends typeof DelayAst> extends EventEmmiter<{}> {
-    private lex: StreamLex;
-
-    constructor(root: DelayRule<T>, rules: Rule[]) {
-        super();
-        this.lex = new StreamLex(getTerminalRules(rules));
+    reset(skipError?: boolean) {
+        this.skipError = skipError ?? this.skipError;
+        this.lex.reset();
+        this.astArr = new List();
+        this.stack = new List();
+        this.stack.push(this.root.getMatcher());
+        this.res = {
+            ast: undefined,
+            ignoreAst: [],
+            errorAst: [],
+            errorToken: [],
+        };
     }
 
     match(str: string) {
-
+        this.lex.match(str);
     }
 
     end() {
-
+        this.lex.end();
     }
 }
