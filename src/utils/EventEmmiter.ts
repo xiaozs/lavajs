@@ -49,4 +49,14 @@ export abstract class EventEmmiter<M extends EventMap> {
             cb(...args);
         }
     }
+
+    protected triggerAsync<E extends keyof M>(event: E, ...args: M[E]) {
+        let callbackArr = this.map.get(event);
+        if (!callbackArr) return;
+        for (let cb of callbackArr) {
+            setTimeout(() => {
+                cb(...args);
+            });
+        }
+    }
 }

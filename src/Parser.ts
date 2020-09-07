@@ -12,12 +12,12 @@ function getTerminalRules(rules: Rule[]): TerminalRule[] {
 export interface ParserResult<T extends typeof DelayAst> {
     ast?: InstanceType<T>;
     ignoreAst: TerminalAst[];
-    errorAst?: Ast[];
+    errorAst: Ast[];
     errorToken: Token[];
 }
 
 export class Parser<T extends typeof DelayAst> {
-    private root: Rule;
+    private rootWithEnd: Rule;
     private lex: Lex;
     private stack!: List<Matcher>;
     private astArr!: List<Ast>;
@@ -26,30 +26,44 @@ export class Parser<T extends typeof DelayAst> {
         this.stack.push(rule.getMatcher());
     }
 
-    constructor(root: DelayRule<T>, rules: Rule[]) {
-        this.root = root.and(new EndRule());
+    constructor(private root: DelayRule<T>, rules: Rule[]) {
+        this.rootWithEnd = root.and(new EndRule());
         this.push = this.push.bind(this);
         this.lex = new Lex(getTerminalRules(rules));
     }
 
-    match(str: string): ParserResult<T> {
+    match(str: string, skipError = true): ParserResult<T> {
         let { ignore, errors } = this.reset(str);
+        let errorAst: Ast[] = [];
         while (true) {
             let ast = this.astArr.shift()!;
             let res = this.machAst(ast);
             if (res.state === MatchState.success) {
+                errorAst.push(...res.retry ?? []);
                 return {
                     ast: res.ast[0] as InstanceType<T>,
                     ignoreAst: ignore,
-                    errorAst: res.retry,
+                    errorAst,
                     errorToken: errors
                 }
             }
             if (res.state === MatchState.fail) {
+                let e = res.retry.pop();
+                e && errorAst.push(e);
+                if (skipError) {
+                    let lastAst = res.retry.pop();
+                    if (lastAst) {
+                        res.retry.push(...lastAst.toTerminalAst());
+                    }
+                    this.retry(res.retry);
+                    this.stack.push(this.rootWithEnd.getMatcher());
+                    continue;
+                }
+
                 return {
                     ast: undefined,
                     ignoreAst: ignore,
-                    errorAst: res.retry.concat(this.astArr.toArray()),
+                    errorAst,
                     errorToken: errors
                 }
             }
@@ -61,8 +75,7 @@ export class Parser<T extends typeof DelayAst> {
         loop: while (true) {
             switch (res.state) {
                 case MatchState.continue:
-                    let retry = res.retry ?? [];
-                    this.astArr.unshift(...retry);
+                    this.retry(res.retry);
                     break loop;
                 case MatchState.success:
                 case MatchState.fail:
@@ -80,6 +93,10 @@ export class Parser<T extends typeof DelayAst> {
         return res;
     }
 
+    private retry(ast?: Ast[]) {
+        this.astArr.unshift(...ast ?? []);
+    }
+
     private reset(str: string) {
         let { ast, errors, ignore } = this.lex.match(str);
 
@@ -87,7 +104,7 @@ export class Parser<T extends typeof DelayAst> {
         this.astArr.push(new EndAst());
 
         this.stack = new List<Matcher>();
-        this.stack.push(this.root.getMatcher());
+        this.stack.push(this.rootWithEnd.getMatcher());
 
         return { errors, ignore };
     }

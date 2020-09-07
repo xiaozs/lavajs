@@ -2,9 +2,13 @@ import type { TerminalRule } from "./Rule";
 import type { Token } from "./Lex";
 
 export abstract class Ast {
+    abstract toTerminalAst(): TerminalAst[];
 }
 
 export class EndAst extends Ast {
+    toTerminalAst(): TerminalAst[] {
+        throw new Error();
+    }
 }
 
 export class TerminalAst extends Ast {
