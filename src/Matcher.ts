@@ -1,5 +1,5 @@
-import { Ast, DelayAst, TerminalAst, RepeatAst, MoreAst, OptionalAst, EndAst, ChildrenAst } from "./Ast";
-import type { Rule, TerminalRule } from "./Rule";
+import { Ast, TerminalAst, RepeatAst, MoreAst, OptionalAst, EndAst, ChildrenAst } from "./Ast";
+import type { Rule, TerminalRule, DelayRule } from "./Rule";
 
 export type MatchResult =
     | MatchFail
@@ -32,8 +32,12 @@ export interface PushFn {
     (rule: Rule): void;
 }
 
+export interface IsLeftRecursion {
+    (): boolean;
+}
+
 export abstract class Matcher {
-    abstract match(ast: Ast, push: PushFn): MatchResult;
+    abstract match(ast: Ast, push: PushFn, isLeftRecursion: IsLeftRecursion): MatchResult;
     abstract onChildrenResult(res: MatchResult, push: PushFn): MatchResult;
 }
 
@@ -61,12 +65,12 @@ export class TerminalMatcher extends Matcher {
         super();
     }
     match(ast: Ast): MatchResult {
-        if (ast instanceof ChildrenAst) {
-            return {
-                state: MatchState.continue,
-                retry: ast.children
-            }
-        }
+        // if (ast instanceof ChildrenAst) {
+        //     return {
+        //         state: MatchState.continue,
+        //         retry: ast.children
+        //     }
+        // }
 
         if (ast instanceof TerminalAst && ast.rule === this.rule) {
             return {
@@ -86,28 +90,55 @@ export class TerminalMatcher extends Matcher {
 }
 
 export class DelayMatcher extends Matcher {
-    constructor(private rule: Rule, private ast: typeof DelayAst) {
+    constructor(readonly delayRule: DelayRule<any>, private maybeLeftRecursion = true) {
         super();
     }
-    match(ast: Ast, push: PushFn): MatchResult {
-        if (ast instanceof this.ast) {
+    match(ast: Ast, push: PushFn, isLeftRecursion: IsLeftRecursion): MatchResult {
+        if (ast instanceof this.delayRule.ast) {
             return {
                 state: MatchState.success,
                 ast: [ast]
             }
         }
 
-        push(this.rule);
+        if (this.maybeLeftRecursion && isLeftRecursion()) {
+            return {
+                state: MatchState.fail,
+                retry: [ast]
+            }
+        }
+
+        push(this.delayRule.rule);
         return {
             state: MatchState.continue,
             retry: [ast]
         }
     }
-    onChildrenResult(res: MatchResult): MatchResult {
+
+    private cache?: Ast;
+    onChildrenResult(res: MatchResult, push: PushFn): MatchResult {
         if (res.state === MatchState.success) {
+            let ast = new this.delayRule.ast(res.ast);
+            if (this.maybeLeftRecursion) {
+                this.cache = ast;
+                push(this.delayRule.rule);
+                return {
+                    state: MatchState.continue,
+                    retry: [ast, ...res.retry ?? []]
+                }
+            } else {
+                return {
+                    ...res,
+                    ast: [ast]
+                }
+            }
+        }
+        if (res.state === MatchState.fail && this.cache) {
+            res.retry.shift();
             return {
-                ...res,
-                ast: [new this.ast(res.ast)]
+                state: MatchState.success,
+                ast: [this.cache],
+                retry: res.retry,
             }
         }
         return res;
@@ -125,6 +156,10 @@ export class AndMatcher extends Matcher {
         super();
     }
     private state = AndOrState.init;
+    get isRight() {
+        return this.state === AndOrState.right;
+    }
+
     match(ast: Ast, push: PushFn): MatchResult {
         switch (this.state) {
             case AndOrState.init:

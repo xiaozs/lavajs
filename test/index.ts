@@ -4,20 +4,24 @@ function assert(flag: boolean): asserts flag {
     if (!flag) throw new Error();
 }
 
-class Root extends DelayAst {
+class X extends DelayAst {
+}
+
+class Expr extends DelayAst {
 }
 
 let collection = new RuleCollection();
 
-let test1 = collection.terminal(/test1/);
-let test2 = collection.terminal(/test2/);
-collection.terminal(",");
+let num = collection.terminal("num");
+let mins = collection.terminal("-");
 
-let root = collection.delay(Root);
+let x = collection.delay(X);
+let expr = collection.delay(Expr);
 
-root.define(test1.and(test2).more());
+x.define(expr);
+expr.define((x.and(mins).and(num)).or(num));
 
-let parser = collection.getParser(root);
-let res = parser.match("test1test2,test1test2");
-let a = res.ast;
+let parser = collection.getParser(x);
+let res = parser.match("num-num-num");
+
 debugger

@@ -1,8 +1,8 @@
-import { Lex, StreamLex, Token } from "./Lex";
+import { StreamLex, Token } from "./Lex";
 import { Rule, TerminalRule, DelayRule, EndRule } from "./Rule";
 import { EventEmmiter } from "./utils/EventEmmiter";
 import { List } from "./utils/List";
-import { Matcher, MatchState, MatchResult } from "./Matcher";
+import { Matcher, MatchState, MatchResult, DelayMatcher, AndMatcher } from "./Matcher";
 import { Ast, TerminalAst, EndAst, DelayAst } from "./Ast";
 
 function getTerminalRules(rules: Rule[]): TerminalRule[] {
@@ -58,9 +58,23 @@ export class StreamParser<T extends typeof DelayAst>
         this.stack.push(rule.getMatcher());
     }
 
+    private isLeftRecursion(): boolean {
+        let iterator = this.stack.getReverseIterator();
+        let last = iterator.next().value as DelayMatcher;
+        for (let it of iterator) {
+            let isSameRule = it instanceof DelayMatcher && it.delayRule === last.delayRule;
+            if (isSameRule) return true;
+
+            let isAndRight = it instanceof AndMatcher && it.isRight;
+            if (isAndRight) return false;
+        }
+        return false;
+    }
+
     constructor(root: DelayRule<T>, rules: Rule[], private skipError = true) {
         super();
         this.push = this.push.bind(this);
+        this.isLeftRecursion = this.isLeftRecursion.bind(this);
 
         this.root = root.and(new EndRule());
 
@@ -122,7 +136,7 @@ export class StreamParser<T extends typeof DelayAst>
     }
 
     private machAst(ast: Ast): MatchResult {
-        let res = this.stack.last!.match(ast, this.push);
+        let res = this.stack.last!.match(ast, this.push, this.isLeftRecursion);
         loop: while (true) {
             switch (res.state) {
                 case MatchState.continue:

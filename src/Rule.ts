@@ -106,17 +106,21 @@ export class TerminalRule extends Rule {
 }
 
 export class DelayRule<T extends typeof DelayAst> extends Rule {
-    private rule: Rule | undefined;
+    private _rule: Rule | undefined;
+    get rule() {
+        if (!this._rule) throw new Error();
+        return this._rule;
+    }
     constructor(readonly ast: T) {
         super();
     }
     define(rule: Rule) {
-        if (this.rule) throw new Error();
-        this.rule = rule;
+        if (this._rule) throw new Error();
+        this._rule = rule;
     }
     getMatcher(): Matcher {
-        if (!this.rule) throw new Error();
-        return new DelayMatcher(this.rule, this.ast);
+        if (!this._rule) throw new Error();
+        return new DelayMatcher(this);
     }
 }
 

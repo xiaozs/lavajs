@@ -120,4 +120,12 @@ export class List<T>{
         }
         return res;
     }
+
+    *getReverseIterator(): IterableIterator<T> {
+        let current = this._tail;
+        while (current) {
+            yield current.value;
+            current = current.prev;
+        }
+    }
 }
