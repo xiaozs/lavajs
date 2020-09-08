@@ -29,6 +29,12 @@ export class RuleCollection {
         if (!isIn) throw new Error();
         return new StreamParser(root, this.rules);
     }
+
+    toJSON(): object {
+        return {
+            rules: this.rules.map(it => it.toJSON())
+        };
+    }
 }
 
 export abstract class Rule {
@@ -55,6 +61,7 @@ export abstract class Rule {
     }
 
     abstract getMatcher(): Matcher;
+    abstract toJSON(): object;
 }
 
 export interface TerminalOptions {
@@ -72,6 +79,11 @@ interface InnerTerminalOptions {
 export class EndRule extends Rule {
     getMatcher(): Matcher {
         return new EndMatcher();
+    }
+    toJSON(): object {
+        return {
+            name: "$end"
+        }
     }
 }
 
@@ -103,6 +115,13 @@ export class TerminalRule extends Rule {
     getMatcher(): Matcher {
         return new TerminalMatcher(this);
     }
+    toJSON(): object {
+        return {
+            name: this.options.ast.name,
+            reg: this.options.reg.toString(),
+            ignore: this.options.ignore
+        }
+    }
 }
 
 export class DelayRule<T extends typeof DelayAst> extends Rule {
@@ -122,6 +141,12 @@ export class DelayRule<T extends typeof DelayAst> extends Rule {
         if (!this._rule) throw new Error();
         return new DelayMatcher(this);
     }
+    toJSON(key?: string): object {
+        return {
+            name: this.ast.name,
+            rule: key ? undefined : this.rule
+        }
+    }
 }
 
 class AndRule extends Rule {
@@ -130,6 +155,25 @@ class AndRule extends Rule {
     }
     getMatcher(): Matcher {
         return new AndMatcher(this.left, this.right);
+    }
+
+    private getAnd() {
+        let res: Rule[] = [];
+        for (let it of [this.left, this.right]) {
+            if (it instanceof AndRule) {
+                res.push(...it.getAnd());
+            } else {
+                res.push(it);
+            }
+        }
+        return res;
+    }
+
+    toJSON(): object {
+        return {
+            name: "$and",
+            rule: this.getAnd()
+        }
     }
 }
 
@@ -140,6 +184,25 @@ class OrRule extends Rule {
     getMatcher(): Matcher {
         return new OrMatcher(this.left, this.right);
     }
+
+    private getOr() {
+        let res: Rule[] = [];
+        for (let it of [this.left, this.right]) {
+            if (it instanceof OrRule) {
+                res.push(...it.getOr());
+            } else {
+                res.push(it);
+            }
+        }
+        return res;
+    }
+
+    toJSON(): object {
+        return {
+            name: "$or",
+            rule: this.getOr()
+        }
+    }
 }
 
 class RepeatRule extends Rule {
@@ -148,6 +211,12 @@ class RepeatRule extends Rule {
     }
     getMatcher(): Matcher {
         return new RepeatMatcher(this.rule);
+    }
+    toJSON(): object {
+        return {
+            name: "$repeat",
+            rule: this.rule
+        }
     }
 }
 
@@ -158,6 +227,12 @@ class MoreRule extends Rule {
     getMatcher(): Matcher {
         return new MoreMatcher(this.rule);
     }
+    toJSON(): object {
+        return {
+            name: "$more",
+            rule: this.rule
+        }
+    }
 }
 
 export class OptionalRule extends Rule {
@@ -166,5 +241,11 @@ export class OptionalRule extends Rule {
     }
     getMatcher(): Matcher {
         return new OptionalMatcher(this.rule);
+    }
+    toJSON(): object {
+        return {
+            name: "$optional",
+            rule: this.rule
+        }
     }
 }

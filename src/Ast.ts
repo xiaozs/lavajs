@@ -3,11 +3,17 @@ import type { Token } from "./Lex";
 
 export abstract class Ast {
     abstract toTerminalAst(): TerminalAst[];
+    abstract toJSON(): object;
 }
 
 export class EndAst extends Ast {
     toTerminalAst(): TerminalAst[] {
         throw new Error();
+    }
+    toJSON(): object {
+        return {
+            name: this.constructor.name
+        }
     }
 }
 
@@ -17,6 +23,13 @@ export class TerminalAst extends Ast {
     }
     toTerminalAst(): TerminalAst[] {
         return [this];
+    }
+    toJSON(): object {
+        return {
+            name: this.constructor.name,
+            reg: this.rule.options.reg.toString(),
+            token: this.token,
+        }
     }
 }
 
@@ -37,6 +50,12 @@ export abstract class ChildrenAst extends Ast {
             }
         }
         return res;
+    }
+    toJSON(): object {
+        return {
+            name: this.constructor.name,
+            children: this.children
+        }
     }
 }
 

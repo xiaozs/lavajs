@@ -24,4 +24,6 @@ expr.define((x.and(mins).and(num)).or(num));
 let parser = collection.getParser(x);
 let res = parser.match("num-num-num");
 
+console.log(JSON.stringify(res, null, 4));
+console.log(JSON.stringify(collection, null, 4));
 debugger
