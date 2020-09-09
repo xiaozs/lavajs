@@ -4,6 +4,7 @@ import { EventEmmiter } from "./utils/EventEmmiter";
 import { List } from "./utils/List";
 import { Matcher, MatchState, MatchResult, DelayMatcher, AndMatcher } from "./Matcher";
 import { Ast, TerminalAst, EndAst, DelayAst } from "./Ast";
+import { UnreachableError } from "./utils/utils";
 
 function getTerminalRules(rules: Rule[]): TerminalRule[] {
     return rules.filter(it => it instanceof TerminalRule) as TerminalRule[];
@@ -152,7 +153,7 @@ export class StreamParser<T extends typeof DelayAst>
                         break loop;
                     }
                 default:
-                    throw new Error();
+                    throw new UnreachableError();
             }
         }
         return res;

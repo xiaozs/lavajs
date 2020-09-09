@@ -3,6 +3,9 @@ import { replaceSpecialChar } from "./utils/utils";
 import { Matcher, TerminalMatcher, DelayMatcher, AndMatcher, OrMatcher, RepeatMatcher, MoreMatcher, OptionalMatcher, EndMatcher } from "./Matcher";
 import { Parser, StreamParser } from "./Parser";
 
+export class RuleNotDefinedError extends Error { }
+export class RuleNotInCollectionError extends Error { }
+
 export class RuleCollection {
     private rules: Rule[] = [];
 
@@ -20,13 +23,13 @@ export class RuleCollection {
 
     getParser<T extends typeof DelayAst>(root: DelayRule<T>): Parser<T> {
         let isIn = this.rules.includes(root);
-        if (!isIn) throw new Error();
+        if (!isIn) throw new RuleNotInCollectionError();
         return new Parser(root, this.rules);
     }
 
     getStreamParser<T extends typeof DelayAst>(root: DelayRule<T>): StreamParser<T> {
         let isIn = this.rules.includes(root);
-        if (!isIn) throw new Error();
+        if (!isIn) throw new RuleNotInCollectionError();
         return new StreamParser(root, this.rules);
     }
 
@@ -62,6 +65,7 @@ export abstract class Rule {
 
     abstract getMatcher(): Matcher;
     abstract toJSON(): object;
+    abstract maybeLeftRecursion(rule: DelayRule<any>): boolean;
 }
 
 export interface TerminalOptions {
@@ -84,6 +88,9 @@ export class EndRule extends Rule {
         return {
             name: "$end"
         }
+    }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        return false;
     }
 }
 
@@ -122,30 +129,40 @@ export class TerminalRule extends Rule {
             ignore: this.options.ignore
         }
     }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        return false;
+    }
 }
 
 export class DelayRule<T extends typeof DelayAst> extends Rule {
     private _rule: Rule | undefined;
     get rule() {
-        if (!this._rule) throw new Error();
+        if (!this._rule) throw new RuleNotDefinedError();
         return this._rule;
     }
     constructor(readonly ast: T) {
         super();
     }
     define(rule: Rule) {
-        if (this._rule) throw new Error();
+        if (this._rule) throw new RuleNotDefinedError();
         this._rule = rule;
     }
+
+    private cache?: boolean;
     getMatcher(): Matcher {
-        if (!this._rule) throw new Error();
-        return new DelayMatcher(this);
+        if (!this._rule) throw new RuleNotDefinedError();
+        this.cache = this.cache ?? this.maybeLeftRecursion(this);
+        return new DelayMatcher(this, this.cache);
     }
     toJSON(key?: string): object {
         return {
             name: this.ast.name,
             rule: key ? undefined : this.rule
         }
+    }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        if (rule === this) return true;
+        return this.rule.maybeLeftRecursion(rule);
     }
 }
 
@@ -175,6 +192,9 @@ class AndRule extends Rule {
             rule: this.getAnd()
         }
     }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        return this.left.maybeLeftRecursion(rule);
+    }
 }
 
 class OrRule extends Rule {
@@ -203,6 +223,9 @@ class OrRule extends Rule {
             rule: this.getOr()
         }
     }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        return this.left.maybeLeftRecursion(rule);
+    }
 }
 
 class RepeatRule extends Rule {
@@ -217,6 +240,9 @@ class RepeatRule extends Rule {
             name: "$repeat",
             rule: this.rule
         }
+    }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        return this.rule.maybeLeftRecursion(rule);
     }
 }
 
@@ -233,9 +259,12 @@ class MoreRule extends Rule {
             rule: this.rule
         }
     }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        return this.rule.maybeLeftRecursion(rule);
+    }
 }
 
-export class OptionalRule extends Rule {
+class OptionalRule extends Rule {
     constructor(private rule: Rule) {
         super();
     }
@@ -247,5 +276,8 @@ export class OptionalRule extends Rule {
             name: "$optional",
             rule: this.rule
         }
+    }
+    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+        return this.rule.maybeLeftRecursion(rule);
     }
 }

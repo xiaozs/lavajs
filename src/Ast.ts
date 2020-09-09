@@ -1,5 +1,6 @@
 import type { TerminalRule } from "./Rule";
 import type { Token } from "./Lex";
+import { UnreachableError } from "./utils/utils";
 
 export abstract class Ast {
     abstract toTerminalAst(): TerminalAst[];
@@ -8,7 +9,7 @@ export abstract class Ast {
 
 export class EndAst extends Ast {
     toTerminalAst(): TerminalAst[] {
-        throw new Error();
+        throw new UnreachableError();
     }
     toJSON(): object {
         return {
@@ -46,7 +47,7 @@ export abstract class ChildrenAst extends Ast {
                 let terminals = it.toTerminalAst();
                 res.push(...terminals);
             } else {
-                throw new Error();
+                throw new UnreachableError();
             }
         }
         return res;

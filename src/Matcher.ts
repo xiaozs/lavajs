@@ -1,5 +1,6 @@
 import { Ast, TerminalAst, RepeatAst, MoreAst, OptionalAst, EndAst, ChildrenAst } from "./Ast";
 import type { Rule, TerminalRule, DelayRule } from "./Rule";
+import { UnreachableError } from "./utils/utils";
 
 export type MatchResult =
     | MatchFail
@@ -56,7 +57,7 @@ export class EndMatcher extends Matcher {
         }
     }
     onChildrenResult(res: MatchResult, push: PushFn): MatchResult {
-        throw new Error();
+        throw new UnreachableError();
     }
 }
 
@@ -85,12 +86,12 @@ export class TerminalMatcher extends Matcher {
         }
     }
     onChildrenResult(res: MatchResult): MatchResult {
-        throw new Error();
+        throw new UnreachableError();
     }
 }
 
 export class DelayMatcher extends Matcher {
-    constructor(readonly delayRule: DelayRule<any>, private maybeLeftRecursion = true) {
+    constructor(readonly delayRule: DelayRule<any>, private maybeLeftRecursion: boolean) {
         super();
     }
     match(ast: Ast, push: PushFn, isLeftRecursion: IsLeftRecursion): MatchResult {
@@ -171,7 +172,7 @@ export class AndMatcher extends Matcher {
                 this.state = AndOrState.right;
                 break
             default:
-                throw new Error();
+                throw new UnreachableError();
         }
         return {
             state: MatchState.continue,
@@ -206,7 +207,7 @@ export class AndMatcher extends Matcher {
                 }
                 return res;
             default:
-                throw new Error();
+                throw new UnreachableError();
         }
     }
 }
@@ -227,7 +228,7 @@ export class OrMatcher extends Matcher {
                 this.state = AndOrState.right;
                 break
             default:
-                throw new Error();
+                throw new UnreachableError();
         }
         return {
             state: MatchState.continue,
@@ -247,7 +248,7 @@ export class OrMatcher extends Matcher {
             case AndOrState.right:
                 return res;
             default:
-                throw new Error();
+                throw new UnreachableError();
         }
     }
 }
