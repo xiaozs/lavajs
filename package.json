@@ -1,16 +1,38 @@
 {
-  "name": "coff",
+  "name": "@lavajs/lex",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p ."
+    "build": "webpack"
   },
   "keywords": [],
-  "author": "",
+  "author": "xiaozs",
   "license": "ISC",
   "devDependencies": {
+    "@types/node": "^14.10.1",
+    "@types/webpack": "^4.41.22",
+    "clean-webpack-plugin": "^3.0.0",
+    "ts-loader": "^8.0.3",
     "ts-node": "^9.0.0",
-    "typescript": "^4.0.2"
-  }
+    "tslib": "^2.0.1",
+    "typescript": "^4.0.2",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiaozs/lex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xiaozs/lex/issues"
+  },
+  "homepage": "https://github.com/xiaozs/lex#readme"
 }
