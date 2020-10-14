@@ -311,7 +311,7 @@ JSON.stringify(result);
 // }'
 ```
 
-## StreamLex
+### StreamLex
 用于生成进行词法分析的Lex对象，接受流式数据，以事件形式返回结果
 
 ```javascript
@@ -464,7 +464,7 @@ lex.end();
 lex.reset();
 ```
 
-## RuleCollection
+### RuleCollection
 用于生成语法分析器的对象
 ```javascript
 import { RuleCollection, TerminalAst, DelayAst } from "lavajs";

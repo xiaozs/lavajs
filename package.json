@@ -4,6 +4,7 @@
   "description": "lavajs是一个由typescript写成的支持umd的DSL式词法分析器、语法分析器库。",
   "main": "dist/index.js",
   "scripts": {
+    "prepublish": "npm run build",
     "build": "webpack"
   },
   "keywords": [

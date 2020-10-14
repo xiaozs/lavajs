@@ -1,10 +1,24 @@
+/**
+ * 链表中的项
+ * 
+ * T 为项的类型
+ */
 interface ListItem<T> {
     value: T;
     prev?: ListItem<T>;
     next?: ListItem<T>;
 }
 
+/**
+ * 链表
+ * 
+ * T 为项的类型
+ */
 export class List<T>{
+    /**
+     * 迭代输入，生成```ListItem```链表的方法
+     * @param iterable 可迭代对象
+     */
     private static arrayToListItem<T>(iterable: Iterable<T>) {
         let head: ListItem<T> | undefined;
         let tail: ListItem<T> | undefined;
@@ -26,6 +40,11 @@ export class List<T>{
 
         return { head, tail, length: i };
     }
+
+    /**
+     * 生成可迭代对象的链表的方法
+     * @param iterable 可迭代对象
+     */
     static from<T>(iterable: Iterable<T>): List<T> {
         let res = new List<T>();
         let { head, tail, length } = this.arrayToListItem(iterable);
@@ -35,10 +54,23 @@ export class List<T>{
         return res;
     }
 
+    /**
+     * 链表的头部项
+     */
     private _head?: ListItem<T>;
+    /**
+     * 链表的尾部项
+     */
     private _tail?: ListItem<T>;
+    /**
+     * 链表的长度
+     */
     private _length = 0;
 
+    /**
+     * 从链表尾部插入值的方法
+     * @param value 插入的值
+     */
     push(...value: T[]) {
         let { head, tail, length } = List.arrayToListItem(value);
         if (length === 0) return;
@@ -54,6 +86,10 @@ export class List<T>{
         this._length += length;
     }
 
+    /**
+     * 从链表头部插入值的方法
+     * @param value 插入的值
+     */
     unshift(...value: T[]) {
         let { head, tail, length } = List.arrayToListItem(value);
         if (length === 0) return;
@@ -69,6 +105,9 @@ export class List<T>{
         this._length += length;
     }
 
+    /**
+     * 弹出链表尾部值的方法
+     */
     pop(): T | undefined {
         if (this._length == 0) return;
 
@@ -84,6 +123,9 @@ export class List<T>{
         return res.value;
     }
 
+    /**
+     * 弹出链表头部值的方法
+     */
     shift(): T | undefined {
         if (this._length == 0) return;
 
@@ -99,18 +141,30 @@ export class List<T>{
         return res.value;
     }
 
+    /**
+     * 链表的长度
+     */
     get length() {
         return this._length;
     }
 
+    /**
+     * 链表的头部对象
+     */
     get first() {
         return this._head?.value;
     }
 
+    /**
+     * 链表的尾部对象
+     */
     get last() {
         return this._tail?.value;
     }
 
+    /**
+     * 将链表转化为数组的方法
+     */
     toArray(): T[] {
         let res: T[] = [];
         let current: ListItem<T> | undefined = this._head;
@@ -121,6 +175,9 @@ export class List<T>{
         return res;
     }
 
+    /**
+     * 生成链表的反向迭代器的方法
+     */
     *getReverseIterator(): IterableIterator<T> {
         let current = this._tail;
         while (current) {
