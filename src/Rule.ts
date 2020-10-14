@@ -3,8 +3,18 @@ import { replaceSpecialChar } from "./utils/utils";
 import { Matcher, TerminalMatcher, DelayMatcher, AndMatcher, OrMatcher, RepeatMatcher, MoreMatcher, OptionalMatcher, EndMatcher } from "./Matcher";
 import { Parser, StreamParser } from "./Parser";
 
-export class RuleNotDefinedError extends Error { }
-export class RuleNotInCollectionError extends Error { }
+export class RuleNotDefinedError extends Error {
+    constructor() {
+        super();
+        Object.setPrototypeOf(this, this.constructor.prototype);
+    }
+}
+export class RuleNotInCollectionError extends Error {
+    constructor() {
+        super();
+        Object.setPrototypeOf(this, this.constructor.prototype);
+    }
+}
 
 export class RuleCollection {
     private rules: Rule[] = [];

@@ -1,15 +1,25 @@
 {
-  "name": "@lavajs/lex",
+  "name": "lavajs",
   "version": "1.0.0",
-  "description": "",
-  "publishConfig": {
-    "access": "public"
-  },
+  "description": "lavajs是一个由typescript写成的支持umd的DSL式词法分析器、语法分析器库。",
   "main": "dist/index.js",
   "scripts": {
     "build": "webpack"
   },
-  "keywords": [],
+  "keywords": [
+    "lex",
+    "lexer",
+    "lexical",
+    "analysis",
+    "scan",
+    "scanner",
+    "scanning",
+    "token",
+    "yacc",
+    "parser",
+    "compiler",
+    "bnf"
+  ],
   "author": "xiaozs",
   "license": "ISC",
   "devDependencies": {
@@ -29,10 +39,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xiaozs/lex.git"
+    "url": "git+https://github.com/xiaozs/lavajs.git"
   },
   "bugs": {
-    "url": "https://github.com/xiaozs/lex/issues"
+    "url": "https://github.com/xiaozs/lavajs/issues"
   },
-  "homepage": "https://github.com/xiaozs/lex#readme"
+  "homepage": "https://github.com/xiaozs/lavajs#readme"
 }

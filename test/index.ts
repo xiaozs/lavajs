@@ -1,29 +1,101 @@
-import { RuleCollection, DelayAst, DelayRule, Parser, ParserResult, TerminalAst } from "../src";
 
-function assert(flag: boolean): asserts flag {
-    if (!flag) throw new Error();
+import { RuleCollection, TerminalAst, DelayAst } from "../src";
+
+class Num extends TerminalAst {
+    exec() {
+        return +this.token.content;
+    }
 }
 
-class X extends DelayAst {
+interface Operator extends TerminalAst {
+    exec(left: number, right: number): number;
+}
+
+class Add extends TerminalAst implements Operator {
+    exec(left: number, right: number) {
+        return left + right;
+    }
+}
+
+class Sub extends TerminalAst implements Operator {
+    exec(left: number, right: number) {
+        return left - right;
+    }
+}
+
+class Mul extends TerminalAst implements Operator {
+    exec(left: number, right: number) {
+        return left * right;
+    }
+}
+
+class Div extends TerminalAst implements Operator {
+    exec(left: number, right: number) {
+        return left / right;
+    }
 }
 
 class Expr extends DelayAst {
+    get left() {
+        return this.children[0] as Num;
+    }
+    get operator() {
+        return this.children[1] as Operator;
+    }
+    get right() {
+        return this.children[2] as Num;
+    }
+    exec() {
+        return this.operator.exec(this.left.exec(), this.right.exec());
+    }
 }
 
 let collection = new RuleCollection();
 
-let num = collection.terminal("num");
-let mins = collection.terminal("-");
+collection.terminal({ reg: /\s+/, ignore: true });
 
-let x = collection.delay(X);
+let num = collection.terminal({
+    reg: /[0-9]+/,
+    ast: Num
+});
+
+let add = collection.terminal({
+    reg: "+",
+    ast: Add
+})
+
+let sub = collection.terminal({
+    reg: "-",
+    ast: Sub
+})
+
+let mul = collection.terminal({
+    reg: "*",
+    ast: Mul
+})
+
+let div = collection.terminal({
+    reg: "/",
+    ast: Div
+})
+
+// operator => add | sub | mul | div
+let operator = add.or(sub).or(mul).or(div);
+
 let expr = collection.delay(Expr);
+// expr => num | operator | num
+expr.define(num.and(operator).and(num));
 
-x.define(expr);
-expr.define((x.and(mins).and(num)).or(num));
+let parser = collection.getStreamParser(expr);
+parser.on("error", result => result);
+parser.on("ignore", result => result);
+parser.on("success", result => result);
+parser.on("fail", result => result);
+parser.on("end", result => {
+    let execResult = result.ast!.exec();
+    console.log(execResult);
+});
 
-let parser = collection.getParser(x);
-let res = parser.match("num-num-num");
-
-console.log(JSON.stringify(res, null, 4));
-console.log(JSON.stringify(collection, null, 4));
-debugger
+parser.match("100 + 100");
+parser.end();
+// 200
