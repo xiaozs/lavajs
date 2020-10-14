@@ -17,7 +17,7 @@ const config: webpack.Configuration = {
     output: {
         path: path.resolve(__dirname, "dist"),
         filename: "index.js",
-        library: "lavajs",
+        library: "lavats",
         libraryTarget: "umd",
         globalObject: "this"
     },

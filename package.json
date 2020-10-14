@@ -1,7 +1,7 @@
 {
-  "name": "lavajs",
+  "name": "lavats",
   "version": "1.0.0",
-  "description": "lavajs是一个由typescript写成的支持umd的DSL式词法分析器、语法分析器库。",
+  "description": "lavats是一个由typescript写成的支持umd的DSL式词法分析器、语法分析器库。",
   "main": "dist/index.js",
   "scripts": {
     "prepublish": "npm run build",
@@ -40,10 +40,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xiaozs/lavajs.git"
+    "url": "git+https://github.com/xiaozs/lavats.git"
   },
   "bugs": {
-    "url": "https://github.com/xiaozs/lavajs/issues"
+    "url": "https://github.com/xiaozs/lavats/issues"
   },
-  "homepage": "https://github.com/xiaozs/lavajs#readme"
+  "homepage": "https://github.com/xiaozs/lavats#readme"
 }

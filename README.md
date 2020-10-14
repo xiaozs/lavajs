@@ -1,48 +1,48 @@
-# lavajs
-lavajs是一个由***typescript***写成的支持***umd***的***DSL式***的词法分析器、语法分析器库。
+# lavats
+lavats是一个由**typescript**写成的支持**umd**的**DSL式**的词法分析器、语法分析器库。
 
 ## 特色
-* 支持***typescript***的```*.d.ts```文件
-* 支持***umd***，可运行在**浏览器**和**nodejs**环境下
-* 使用***DSL式***，可与js语言无缝衔接
+* 支持**typescript**的```*.d.ts```文件
+* 支持**umd**，可运行在**浏览器**和**nodejs**环境下
+* 使用**DSL式**，可与js语言无缝衔接
 * 支持左递归循环
 
 ## 安装
 在命令行中输入：
 ```
-npm install lavajs
+npm install lavats
 ```
 
 ## 引入
 
 ### cmd
 ```javascript
-var lavajs = require("lavajs");
+var lavats = require("lavats");
 ```
 
 ### amd
 ```javascript
-require(["lavajs"], function(lavajs) {
+require(["lavats"], function(lavats) {
 
 })
 ```
 ```javascript
-define(["lavajs"], function(lavajs) {
+define(["lavats"], function(lavats) {
 
 })
 ```
 
 ### es6
 ```javascript
-import * as lavajs from "lavajs";
+import * as lavats from "lavats";
 ```
 
 ### \<script>
 ```html
-<script src="./node_modules/lavajs/dist/index.js"></script>
+<script src="./node_modules/lavats/dist/index.js"></script>
 <script>
 
-lavajs
+lavats
 
 </script>
 ```
@@ -53,7 +53,7 @@ lavajs
 ### TerminalRule
 用于生成终止符的规则
 ```javascript
-import { TerminalRule } from "lavajs";
+import { TerminalRule } from "lavats";
 // new TerminalRule(options: TerminalOptions | RegExp | string);
 
 // 可以接受正则表达式（不支持flags）
@@ -76,7 +76,7 @@ new TerminalRule({ reg: /\s+/, ignore: true });
 
 * 一般用例：
 ```javascript
-import { Lex, TerminalRule } from "lavajs";
+import { Lex, TerminalRule } from "lavats";
 
 // new Lex(terminalRules: TerminalRule[])
 
@@ -185,7 +185,7 @@ JSON.stringify(result);
 
 * 含有无法识别的字符时：
 ```javascript
-import { Lex, TerminalRule } from "lavajs";
+import { Lex, TerminalRule } from "lavats";
 
 let lex = new Lex([
     new TerminalRule(/[0-9]+/),
@@ -315,7 +315,7 @@ JSON.stringify(result);
 用于生成进行词法分析的Lex对象，接受流式数据，以事件形式返回结果
 
 ```javascript
-import { StreamLex, TerminalRule } from "lavajs";
+import { StreamLex, TerminalRule } from "lavats";
 
 // new StreamLex(rules: TerminalRule[])
 
@@ -467,7 +467,7 @@ lex.reset();
 ### RuleCollection
 用于生成语法分析器的对象
 ```javascript
-import { RuleCollection, TerminalAst, DelayAst } from "lavajs";
+import { RuleCollection, TerminalAst, DelayAst } from "lavats";
 
 class Num extends TerminalAst {
     exec() {

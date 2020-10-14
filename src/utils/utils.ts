@@ -1,9 +1,9 @@
 /**
- * 不可能执行到的Error，弹出此Error，意味着lavajs库有bug
+ * 不可能执行到的Error，弹出此Error，意味着lavats库有bug
  */
 export class UnreachableError extends Error {
     constructor() {
-        super("不可能执行到的Error，弹出此Error，意味着lavajs库有bug");
+        super("不可能执行到的Error，弹出此Error，意味着lavats库有bug");
         Object.setPrototypeOf(this, this.constructor.prototype);
     }
 }
