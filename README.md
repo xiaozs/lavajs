@@ -264,7 +264,7 @@ JSON.stringify(result);
 //         }
 //     ],
 //     "errors": [
-//         {                                   // 此处多出了’.‘
+//         {                                   // 此处多出了'.'
 //             "content": ".",
 //             "start": {
 //                 "row": 0,
@@ -476,25 +476,25 @@ class Num extends TerminalAst {
 }
 
 class Add extends TerminalAst {
-    exec(left: number, right: number) {
+    exec(left, right) {
         return left + right;
     }
 }
 
 class Sub extends TerminalAst {
-    exec(left: number, right: number) {
+    exec(left, right) {
         return left - right;
     }
 }
 
 class Mul extends TerminalAst {
-    exec(left: number, right: number) {
+    exec(left, right) {
         return left * right;
     }
 }
 
 class Div extends TerminalAst {
-    exec(left: number, right: number) {
+    exec(left, right) {
         return left / right;
     }
 }
@@ -555,7 +555,7 @@ let operator = add.or(sub).or(mul).or(div);
 
 // 非终结符规则的定义需要分开两步（先声明，后定义）
 let expr = collection.delay(Expr);
-// expr => num | operator | num
+// expr => num operator num
 expr.define(num.and(operator).and(num));
 
 // 获取语法分析器Parser
@@ -676,6 +676,19 @@ parser.match("100 + 100");
 parser.end();
 // 200
 ```
+提供便捷方法，可使用插值字符串的方式，来定义规则。
+```javascript
+// operator => add | sub | mul | div
+// let operator = add.or(sub).or(mul).or(div);
+// 可换写成：
+let operator = Rule.bnf`${add} | ${sub} | ${mul} | ${div}`;
+
+// expr => num operator num
+// expr.define(num.and(operator).and(num));
+// 可换写成：
+expr.defineBnf`${num} ${operator} ${num}`;
+```
+
 ```StreamParser```可通过```reset```方法重置
 ```javascript
 parser.reset();

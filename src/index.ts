@@ -7,5 +7,5 @@ export { Lex, StreamLex } from "./Lex";
 
 export type { Parser, ParserResult, StreamParser } from "./Parser";
 
-export { RuleCollection, TerminalRule, RuleNotDefinedError, RuleNotInCollectionError } from "./Rule";
-export type { DelayRule, Rule, TerminalOptions } from "./Rule";
+export { Rule, RuleCollection, TerminalRule, RuleSyntaxError, RuleDefinedError, RuleNotDefinedError, RuleNotInCollectionError } from "./Rule";
+export type { DelayRule, TerminalOptions } from "./Rule";

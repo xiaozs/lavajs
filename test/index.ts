@@ -1,5 +1,5 @@
 
-import { RuleCollection, TerminalAst, DelayAst } from "../src";
+import { RuleCollection, TerminalAst, DelayAst, Rule } from "../src";
 
 class Num extends TerminalAst {
     exec() {
@@ -80,11 +80,12 @@ let div = collection.terminal({
 })
 
 // operator => add | sub | mul | div
-let operator = add.or(sub).or(mul).or(div);
+let operator = Rule.bnf`${add} | ${sub} | ${mul} | ${div}`;
+
 
 let expr = collection.delay(Expr);
-// expr => num | operator | num
-expr.define(num.and(operator).and(num));
+// expr => num operator num
+expr.defineBnf`${num} ${operator} ${num}`;
 
 let parser = collection.getStreamParser(expr);
 parser.on("error", result => result);

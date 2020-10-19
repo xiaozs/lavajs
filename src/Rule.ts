@@ -1,7 +1,149 @@
-import { TerminalAst, DelayAst } from "./Ast";
-import { replaceSpecialChar } from "./utils/utils";
+import { TerminalAst, DelayAst, Ast } from "./Ast";
+import { replaceSpecialChar, UnreachableError } from "./utils/utils";
 import { Matcher, TerminalMatcher, DelayMatcher, AndMatcher, OrMatcher, RepeatMatcher, MoreMatcher, OptionalMatcher, EndMatcher } from "./Matcher";
 import { Parser, StreamParser } from "./Parser";
+
+/**
+ * 描述插值字符串中规则的Ast的接口
+ */
+interface ItemAst extends Ast {
+    /**
+     * 获取描述的组合规则的方法
+     * @param rules 被插入的规则的数组
+     */
+    getRule(rules: Rule[]): Rule;
+}
+
+/**
+ * 插值字符串规则，根规则的Ast类
+ */
+class BnfAst extends DelayAst implements ItemAst {
+    getRule(rules: Rule[]): Rule {
+        return (this.children[0] as ItemAst).getRule(rules);
+    }
+}
+
+/**
+ * 插值字符串规则，大括号包括的组合规则的Ast类
+ */
+class GroupItemAst extends DelayAst implements ItemAst {
+    getRule(rules: Rule[]): Rule {
+        return (this.children[1] as ItemAst).getRule(rules);
+    }
+}
+
+/**
+ * 插值字符串规则，```+*?```组合规则的Ast类
+ */
+class OperatorItemAst extends DelayAst implements ItemAst {
+    getRule(rules: Rule[]): Rule {
+        let rule = (this.children[0] as ItemAst).getRule(rules);
+        let operator = (this.children[1] as TerminalAst).token.content;
+        if (operator === "+") {
+            return rule.more();
+        }
+        if (operator === "*") {
+            return rule.repeat();
+        }
+        if (operator === "?") {
+            return rule.optional();
+        }
+        throw new UnreachableError();
+    }
+}
+
+/**
+ * 插值字符串规则，与组合规则的Ast类
+ */
+class AndItemAst extends DelayAst implements ItemAst {
+    getRule(rules: Rule[]): Rule {
+        let left = (this.children[0] as ItemAst).getRule(rules);
+        let right = (this.children[1] as ItemAst).getRule(rules);
+        return left.and(right);
+    }
+}
+
+/**
+ * 插值字符串规则，或组合规则的Ast类
+ */
+class OrItemAst extends DelayAst implements ItemAst {
+    getRule(rules: Rule[]): Rule {
+        let left = (this.children[0] as ItemAst).getRule(rules);
+        let right = (this.children[2] as ItemAst).getRule(rules);
+        return left.or(right);
+    }
+}
+
+/**
+ * 插值字符串规则，插值规则的Ast类
+ */
+class SimpleItemAst extends TerminalAst implements ItemAst {
+    getRule(rules: Rule[]): Rule {
+        let index = +this.token.content.slice(1);
+        return rules[index];
+    }
+}
+
+/**
+ * 获取插值字符串规则语法分析器的方法
+ */
+function getBnfParser() {
+    let collection = new RuleCollection();
+    collection.terminal({ reg: /[\s\r\n]+/, ignore: true });
+
+    let simpleRule = collection.terminal({ reg: /\$[0-9]+/, ast: SimpleItemAst });
+
+    let left = collection.terminal("(");
+    let right = collection.terminal(")");
+
+    let or = collection.terminal("|");
+
+    let more = collection.terminal("+");
+    let optional = collection.terminal("?");
+    let repeat = collection.terminal("*");
+    let operator = more.or(optional).or(repeat);
+
+    let groupItem = collection.delay(GroupItemAst);
+    let operatorItem = collection.delay(OperatorItemAst);
+    let andItem = collection.delay(AndItemAst);
+    let orItem = collection.delay(OrItemAst);
+    let item = collection.delay(BnfAst);
+
+    groupItem.define(left.and(item).and(right));
+    operatorItem.define(item.and(operator));
+    andItem.define(item.and(item));
+    orItem.define(item.and(or).and(item));
+
+    item.define(
+        groupItem
+            .or(orItem)
+            .or(operatorItem)
+            .or(andItem)
+            .or(simpleRule)
+    );
+
+    return collection.getParser(item);
+}
+
+/**
+ * ```Rule.bnf```规则定义错误的异常
+ */
+export class RuleSyntaxError extends Error {
+    constructor() {
+        super();
+        Object.setPrototypeOf(this, this.constructor.prototype);
+    }
+}
+
+/**
+ * ```DelayRule```规则已经定义的异常
+ */
+export class RuleDefinedError extends Error {
+    constructor() {
+        super();
+        Object.setPrototypeOf(this, this.constructor.prototype);
+    }
+}
 
 /**
  * ```DelayRule```规则没有定义的异常
@@ -37,7 +179,7 @@ export class RuleCollection {
      * @param options ```TerminalRule```的配置
      */
     terminal(options: string | RegExp | TerminalOptions) {
-        let res = Rule.terminal(options)
+        let res = Rule.terminal(options);
         this.rules.push(res);
         return res;
     }
@@ -89,6 +231,37 @@ export class RuleCollection {
  * 规则的类
  */
 export abstract class Rule {
+    private static bnfParser?: Parser<typeof BnfAst>;
+    /**
+     * 合并规则的方法
+     * 
+     * （使用插值字符串的方式）
+     * @param strArr 规则的元字符的数组
+     * @param rules 被组合的规则的数组
+     * 
+     * @example
+     * ```javascript
+     * let collection = new RuleCollection();
+     * let add = collection.terminal("+");
+     * let sub = collection.terminal("-");
+     * let mul = collection.terminal("*");
+     * let div = collection.terminal("/");
+     * let operator = Rule.bnf`${add} | ${sub} | ${mul} | ${div}`;
+     * ```
+     */
+    static bnf(strArr: readonly string[], ...rules: Rule[]): Rule {
+        this.bnfParser = this.bnfParser ?? getBnfParser();
+
+        let bnfStr = "";
+        for (let i = 0; i < rules.length; i++) {
+            bnfStr += strArr[i] + "$" + i;
+        }
+        bnfStr += strArr[rules.length];
+
+        let res = this.bnfParser.match(bnfStr, false);
+        if (!res.ast) throw new RuleSyntaxError();
+        return res.ast.getRule(rules);
+    }
     /**
      * 生成```DelayRule```
      * @param ast 自定义生成```Ast```的类
@@ -293,8 +466,34 @@ export class DelayRule<T extends typeof DelayAst> extends Rule {
      * @param rule 规则
      */
     define(rule: Rule) {
-        if (this._rule) throw new RuleNotDefinedError();
+        if (this._rule) throw new RuleDefinedError();
         this._rule = rule;
+    }
+
+    /**
+     * 定义规则的方法
+     * 
+     * （使用插值字符串的方式）
+     * @param strArr 规则的元字符的数组
+     * @param rules 被组合的规则的数组
+     * 
+     * @example
+     * ```javascript
+     * let collection = new RuleCollection();
+     * let num = collection.terminal(/[0-9]+/);
+     * let add = collection.terminal("+");
+     * let sub = collection.terminal("-");
+     * let mul = collection.terminal("*");
+     * let div = collection.terminal("/");
+     * let operator = Rule.bnf`${add} | ${sub} | ${mul} | ${div}`;
+     * 
+     * let expr = collection.delay(Expr);
+     * expr.defineBnf`${num} ${operator} ${num}`;
+     * ```
+     */
+    defineBnf(strArr: readonly string[], ...rules: Rule[]) {
+        let rule = Rule.bnf(strArr, ...rules);
+        this.define(rule);
     }
 
     /**
