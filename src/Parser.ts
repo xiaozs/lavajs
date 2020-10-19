@@ -187,13 +187,17 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
         this.onAst(new EndAst());
         this.trigger("end", this.res)
     }
-
+    /**
+     * 是否已经触发过```fail```事件
+     */
+    private isFailed = false;
     /**
      * 词法分析器触发```ast```事件时的回调，
      * 是语法分析器的核心方法
      * @param ast 词法分析器分析到的```TerminalAst```
      */
     private onAst(ast: Ast) {
+        if (this.isFailed) return;
         this.astArr.push(ast);
         while (true) {
             let currentAst = this.astArr.shift();
@@ -218,6 +222,7 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
                     continue;
                 }
 
+                this.isFailed = true;
                 return this.trigger("fail", this.res);
             }
         }
@@ -269,6 +274,7 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
         this.astArr = new List();
         this.stack = new List();
         this.stack.push(this.root.getMatcher());
+        this.isFailed = false;
         this.res = {
             ast: undefined,
             ignoreAst: [],
