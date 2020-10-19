@@ -1,9 +1,9 @@
+import { Ast, DelayAst, EndAst, TerminalAst } from "./Ast";
 import { StreamLex, Token } from "./Lex";
-import { Rule, TerminalRule, DelayRule, EndRule } from "./Rule";
+import { AndMatcher, DelayMatcher, Matcher, MatchResult, MatchState } from "./Matcher";
+import { DelayRule, EndRule, Rule, TerminalRule } from "./Rule";
 import { EventEmmiter } from "./utils/EventEmmiter";
 import { List } from "./utils/List";
-import { Matcher, MatchState, MatchResult, DelayMatcher, AndMatcher } from "./Matcher";
-import { Ast, TerminalAst, EndAst, DelayAst } from "./Ast";
 import { UnreachableError } from "./utils/utils";
 
 /**
@@ -17,11 +17,11 @@ function getTerminalRules(rules: Rule[]): TerminalRule[] {
 /**
  * 描述语法分析器匹配结果的接口
  */
-export interface ParserResult<T extends typeof DelayAst> {
+export interface ParserResult<T> {
     /**
      * 生成的```Ast```树，可通过判断是否为undefined，来判断是否成功
      */
-    ast?: InstanceType<T>;
+    ast?: T;
     /**
      * 词法分析中被跳过的```Ast```的数组
      */
@@ -39,16 +39,16 @@ export interface ParserResult<T extends typeof DelayAst> {
 /**
  * 语法分析器的类
  */
-export class Parser<T extends typeof DelayAst> {
+export class Parser<A extends Ast[], R extends DelayAst<A>> {
     /**
      * 同步的语法分析器由流式的语法分析器```StreamParser```组合实现
      */
-    private streamParser: StreamParser<T>;
+    private streamParser: StreamParser<A, R>;
     /**
      * @param root 根规则
      * @param rules 所有规则
      */
-    constructor(root: DelayRule<T>, rules: Rule[]) {
+    constructor(root: DelayRule<A, R>, rules: Rule[]) {
         this.streamParser = new StreamParser(root, rules);
     }
 
@@ -57,10 +57,10 @@ export class Parser<T extends typeof DelayAst> {
      * @param str 待分析字符
      * @param skipError 当遇到不符合语法规则的```Ast```时，是否将其忽略，继续进行匹配（默认为```true```）
      */
-    match(str: string, skipError = true): ParserResult<T> {
-        let res!: ParserResult<T>;
+    match(str: string, skipError = true): ParserResult<R> {
+        let res!: ParserResult<R>;
 
-        function getRes(r: ParserResult<T>) {
+        function getRes(r: ParserResult<R>) {
             res = r;
         }
 
@@ -84,14 +84,14 @@ export class Parser<T extends typeof DelayAst> {
  * @event success   语法分析成功时触发的事件
  * @event fail      语法分析失败时触发的事件
  */
-export class StreamParser<T extends typeof DelayAst>
+export class StreamParser<A extends Ast[], R extends DelayAst<A>>
     extends EventEmmiter<{
-        error: [ParserResult<T>],
-        ignore: [ParserResult<T>],
-        end: [ParserResult<T>],
+        error: [ParserResult<R>],
+        ignore: [ParserResult<R>],
+        end: [ParserResult<R>],
 
-        success: [ParserResult<T>],
-        fail: [ParserResult<T>],
+        success: [ParserResult<R>],
+        fail: [ParserResult<R>],
     }> {
     /**
      * 根规则
@@ -112,7 +112,7 @@ export class StreamParser<T extends typeof DelayAst>
     /**
      * 匹配结果
      */
-    private res!: ParserResult<T>;
+    private res!: ParserResult<R>;
 
     /**
      * 往规则栈中插入规则的辅助方法
@@ -127,7 +127,7 @@ export class StreamParser<T extends typeof DelayAst>
      */
     private isLeftRecursion(): boolean {
         let iterator = this.stack.getReverseIterator();
-        let last = iterator.next().value as DelayMatcher;
+        let last = iterator.next().value as DelayMatcher<any, any>;
         for (let it of iterator) {
             let isSameRule = it instanceof DelayMatcher && it.delayRule === last.delayRule;
             if (isSameRule) return true;
@@ -143,7 +143,7 @@ export class StreamParser<T extends typeof DelayAst>
      * @param rules 所有规则
      * @param skipError 当遇到不符合语法规则的```Ast```时，是否将其忽略，继续进行匹配（默认为```true```）
      */
-    constructor(root: DelayRule<T>, rules: Rule[], private skipError = true) {
+    constructor(root: DelayRule<A, R>, rules: Rule[], private skipError = true) {
         super();
         this.push = this.push.bind(this);
         this.isLeftRecursion = this.isLeftRecursion.bind(this);
@@ -201,7 +201,7 @@ export class StreamParser<T extends typeof DelayAst>
 
             let res = this.machAst(currentAst);
             if (res.state === MatchState.success) {
-                this.res.ast = res.ast[0] as InstanceType<T>;
+                this.res.ast = res.ast[0] as R;
                 this.res.errorAst.push(...res.retry ?? []);
                 return this.trigger("success", this.res);
             }

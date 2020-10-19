@@ -1,7 +1,7 @@
-import { TerminalAst, DelayAst, Ast } from "./Ast";
-import { replaceSpecialChar, UnreachableError } from "./utils/utils";
-import { Matcher, TerminalMatcher, DelayMatcher, AndMatcher, OrMatcher, RepeatMatcher, MoreMatcher, OptionalMatcher, EndMatcher } from "./Matcher";
+import { Ast, DelayAst, DelayAstConstructor, TerminalAst } from "./Ast";
+import { AndMatcher, DelayMatcher, EndMatcher, Matcher, MoreMatcher, OptionalMatcher, OrMatcher, RepeatMatcher, TerminalMatcher } from "./Matcher";
 import { Parser, StreamParser } from "./Parser";
+import { replaceSpecialChar, UnreachableError } from "./utils/utils";
 
 /**
  * 描述插值字符串中规则的Ast的接口
@@ -17,28 +17,28 @@ interface ItemAst extends Ast {
 /**
  * 插值字符串规则，根规则的Ast类
  */
-class BnfAst extends DelayAst implements ItemAst {
+class BnfAst extends DelayAst<[ItemAst]> implements ItemAst {
     getRule(rules: Rule[]): Rule {
-        return (this.children[0] as ItemAst).getRule(rules);
+        return this.children[0].getRule(rules);
     }
 }
 
 /**
  * 插值字符串规则，大括号包括的组合规则的Ast类
  */
-class GroupItemAst extends DelayAst implements ItemAst {
+class GroupItemAst extends DelayAst<[any, ItemAst, any]> implements ItemAst {
     getRule(rules: Rule[]): Rule {
-        return (this.children[1] as ItemAst).getRule(rules);
+        return this.children[1].getRule(rules);
     }
 }
 
 /**
  * 插值字符串规则，```+*?```组合规则的Ast类
  */
-class OperatorItemAst extends DelayAst implements ItemAst {
+class OperatorItemAst extends DelayAst<[ItemAst, TerminalAst]> implements ItemAst {
     getRule(rules: Rule[]): Rule {
-        let rule = (this.children[0] as ItemAst).getRule(rules);
-        let operator = (this.children[1] as TerminalAst).token.content;
+        let rule = this.children[0].getRule(rules);
+        let operator = this.children[1].token.content;
         if (operator === "+") {
             return rule.more();
         }
@@ -55,10 +55,10 @@ class OperatorItemAst extends DelayAst implements ItemAst {
 /**
  * 插值字符串规则，与组合规则的Ast类
  */
-class AndItemAst extends DelayAst implements ItemAst {
+class AndItemAst extends DelayAst<[ItemAst, ItemAst]> implements ItemAst {
     getRule(rules: Rule[]): Rule {
-        let left = (this.children[0] as ItemAst).getRule(rules);
-        let right = (this.children[1] as ItemAst).getRule(rules);
+        let left = this.children[0].getRule(rules);
+        let right = this.children[1].getRule(rules);
         return left.and(right);
     }
 }
@@ -66,10 +66,10 @@ class AndItemAst extends DelayAst implements ItemAst {
 /**
  * 插值字符串规则，或组合规则的Ast类
  */
-class OrItemAst extends DelayAst implements ItemAst {
+class OrItemAst extends DelayAst<[ItemAst, any, ItemAst]> implements ItemAst {
     getRule(rules: Rule[]): Rule {
-        let left = (this.children[0] as ItemAst).getRule(rules);
-        let right = (this.children[2] as ItemAst).getRule(rules);
+        let left = this.children[0].getRule(rules);
+        let right = this.children[2].getRule(rules);
         return left.or(right);
     }
 }
@@ -188,7 +188,7 @@ export class RuleCollection {
      * 生成```DelayRule```，并在当前规则集```RuleCollection```中添加该规则的方法，
      * @param ast 自定义生成```Ast```的类
      */
-    delay<T extends typeof DelayAst>(ast: T): DelayRule<T> {
+    delay<A extends Ast[], R extends DelayAst<A>>(ast: DelayAstConstructor<A, R>): DelayRule<A, R> {
         let res = Rule.delay(ast);
         this.rules.push(res);
         return res;
@@ -198,7 +198,7 @@ export class RuleCollection {
      * 生成语法分析器
      * @param root 指定作为根对象的规则
      */
-    getParser<T extends typeof DelayAst>(root: DelayRule<T>): Parser<T> {
+    getParser<A extends Ast[], R extends DelayAst<A>>(root: DelayRule<A, R>): Parser<A, R> {
         let isIn = this.rules.includes(root);
         if (!isIn) throw new RuleNotInCollectionError();
         return new Parser(root, this.rules);
@@ -209,7 +209,7 @@ export class RuleCollection {
      * （接受流式数据，以事件形式返回结果）
      * @param root 指定作为根对象的规则
      */
-    getStreamParser<T extends typeof DelayAst>(root: DelayRule<T>): StreamParser<T> {
+    getStreamParser<A extends Ast[], R extends DelayAst<A>>(root: DelayRule<A, R>): StreamParser<A, R> {
         let isIn = this.rules.includes(root);
         if (!isIn) throw new RuleNotInCollectionError();
         return new StreamParser(root, this.rules);
@@ -231,7 +231,7 @@ export class RuleCollection {
  * 规则的类
  */
 export abstract class Rule {
-    private static bnfParser?: Parser<typeof BnfAst>;
+    private static bnfParser?: Parser<[ItemAst], BnfAst>;
     /**
      * 合并规则的方法
      * 
@@ -266,7 +266,7 @@ export abstract class Rule {
      * 生成```DelayRule```
      * @param ast 自定义生成```Ast```的类
      */
-    static delay<T extends typeof DelayAst>(ast: T): DelayRule<T> {
+    static delay<A extends Ast[], R extends DelayAst<A>>(ast: DelayAstConstructor<A, R>): DelayRule<A, R> {
         return new DelayRule(ast);
     }
     /**
@@ -327,7 +327,7 @@ export abstract class Rule {
      * 判断是否会发生左递归的方法
      * @param rule 开始计算的规则
      */
-    abstract maybeLeftRecursion(rule: DelayRule<any>): boolean;
+    abstract maybeLeftRecursion(rule: DelayRule<any, any>): boolean;
 }
 
 /**
@@ -380,7 +380,7 @@ export class EndRule extends Rule {
             name: "$end"
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         return false;
     }
 }
@@ -433,7 +433,7 @@ export class TerminalRule extends Rule {
             ignore: this.options.ignore
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         return false;
     }
 }
@@ -443,7 +443,7 @@ export class TerminalRule extends Rule {
  * 
  * T 为继承了```DelayAst```的类
  */
-export class DelayRule<T extends typeof DelayAst> extends Rule {
+export class DelayRule<A extends Ast[], R extends DelayAst<A>> extends Rule {
     /**
      * 包装的规则定义
      */
@@ -458,7 +458,7 @@ export class DelayRule<T extends typeof DelayAst> extends Rule {
     /**
      * @param ast 生成的```Ast```的类型
      */
-    constructor(readonly ast: T) {
+    constructor(readonly ast: DelayAstConstructor<A, R>) {
         super();
     }
     /**
@@ -511,7 +511,7 @@ export class DelayRule<T extends typeof DelayAst> extends Rule {
             rule: key ? undefined : this.rule
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         if (rule === this) return true;
         return this.rule.maybeLeftRecursion(rule);
     }
@@ -553,7 +553,7 @@ class AndRule extends Rule {
             rule: this.getAnd()
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         return this.left.maybeLeftRecursion(rule);
     }
 }
@@ -594,7 +594,7 @@ class OrRule extends Rule {
             rule: this.getOr()
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         return this.left.maybeLeftRecursion(rule);
     }
 }
@@ -620,7 +620,7 @@ class RepeatRule extends Rule {
             rule: this.rule
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         return this.rule.maybeLeftRecursion(rule);
     }
 }
@@ -646,7 +646,7 @@ class MoreRule extends Rule {
             rule: this.rule
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         return this.rule.maybeLeftRecursion(rule);
     }
 }
@@ -672,7 +672,7 @@ class OptionalRule extends Rule {
             rule: this.rule
         }
     }
-    maybeLeftRecursion(rule: DelayRule<any>): boolean {
+    maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
         return this.rule.maybeLeftRecursion(rule);
     }
 }

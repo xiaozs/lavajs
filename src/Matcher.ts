@@ -1,5 +1,5 @@
-import { Ast, TerminalAst, RepeatAst, MoreAst, OptionalAst, EndAst, ChildrenAst } from "./Ast";
-import type { Rule, TerminalRule, DelayRule } from "./Rule";
+import { Ast, DelayAst, EndAst, MoreAst, OptionalAst, RepeatAst, TerminalAst } from "./Ast";
+import type { DelayRule, Rule, TerminalRule } from "./Rule";
 import { UnreachableError } from "./utils/utils";
 
 /**
@@ -165,12 +165,12 @@ export class TerminalMatcher extends Matcher {
 /**
  * ```DelayRule```对应的匹配器
  */
-export class DelayMatcher extends Matcher {
+export class DelayMatcher<A extends Ast[], R extends DelayAst<A>> extends Matcher {
     /**
      * @param delayRule 对应的```DelayRule```
      * @param maybeLeftRecursion 此规则是否可能发生左递归
      */
-    constructor(readonly delayRule: DelayRule<any>, private maybeLeftRecursion: boolean) {
+    constructor(readonly delayRule: DelayRule<A, R>, private maybeLeftRecursion: boolean) {
         super();
     }
     match(ast: Ast, push: PushFn, isLeftRecursion: IsLeftRecursion): MatchResult {
@@ -201,7 +201,7 @@ export class DelayMatcher extends Matcher {
     private cache?: Ast;
     onChildrenResult(res: MatchResult, push: PushFn): MatchResult {
         if (res.state === MatchState.success) {
-            let ast = new this.delayRule.ast(res.ast);
+            let ast = new this.delayRule.ast(res.ast as A);
             if (this.maybeLeftRecursion) {
                 this.cache = ast;
                 push(this.delayRule.rule);

@@ -1,5 +1,5 @@
-import type { TerminalRule } from "./Rule";
 import type { Token } from "./Lex";
+import type { TerminalRule } from "./Rule";
 import { UnreachableError } from "./utils/utils";
 
 /**
@@ -60,11 +60,11 @@ export class TerminalAst extends Ast {
 /**
  * 用于描述含有子元素的```Ast```类
  */
-export abstract class ChildrenAst extends Ast {
-    /**=
+export abstract class ChildrenAst<T extends Ast[]> extends Ast {
+    /**
      * @param children 包含子元素的数组
      */
-    constructor(public children: Ast[]) {
+    constructor(public children: T) {
         super();
     }
     toTerminalAst(): TerminalAst[] {
@@ -89,12 +89,16 @@ export abstract class ChildrenAst extends Ast {
     }
 }
 
+export interface DelayAstConstructor<A extends Ast[], R extends DelayAst<A>> {
+    new(children: A): R;
+}
+
 /**
  * 用于描述非终结符的```Ast```类
  * 
  * 可通过对其进行继承来自定义词法或语法分析中生成抽象语法树类型
  */
-export class DelayAst extends ChildrenAst {
+export class DelayAst<T extends Ast[] = Ast[]> extends ChildrenAst<T> {
 }
 
 /**
@@ -102,7 +106,7 @@ export class DelayAst extends ChildrenAst {
  * 
  * 相当于```*```
  */
-export class RepeatAst extends ChildrenAst {
+export class RepeatAst<T extends Ast[] = Ast[]> extends ChildrenAst<T> {
 }
 
 
@@ -111,7 +115,7 @@ export class RepeatAst extends ChildrenAst {
  * 
  * 相当于```+```
  */
-export class MoreAst extends ChildrenAst {
+export class MoreAst<T extends Ast[] = Ast[]> extends ChildrenAst<T> {
 }
 
 
@@ -120,5 +124,5 @@ export class MoreAst extends ChildrenAst {
  * 
  * 相当于```?```
  */
-export class OptionalAst extends ChildrenAst {
+export class OptionalAst<T extends Ast[] = Ast[]> extends ChildrenAst<T> {
 }

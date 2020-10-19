@@ -1,5 +1,5 @@
 
-import { RuleCollection, TerminalAst, DelayAst, Rule } from "../src";
+import { DelayAst, Rule, RuleCollection, TerminalAst } from "../src";
 
 class Num extends TerminalAst {
     exec() {
@@ -35,15 +35,15 @@ class Div extends TerminalAst implements Operator {
     }
 }
 
-class Expr extends DelayAst {
+class Expr extends DelayAst<[Num, Operator, Num]> {
     get left() {
-        return this.children[0] as Num;
+        return this.children[0];
     }
     get operator() {
-        return this.children[1] as Operator;
+        return this.children[1];
     }
     get right() {
-        return this.children[2] as Num;
+        return this.children[2];
     }
     exec() {
         return this.operator.exec(this.left.exec(), this.right.exec());
@@ -81,6 +81,7 @@ let div = collection.terminal({
 
 // operator => add | sub | mul | div
 let operator = Rule.bnf`${add} | ${sub} | ${mul} | ${div}`;
+let tse = Rule.bnf`(${add} | ${sub})+ | (${mul} | ${div})+`;
 
 
 let expr = collection.delay(Expr);

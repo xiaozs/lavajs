@@ -562,8 +562,8 @@ expr.define(num.and(operator).and(num));
 let parser = collection.getParser(expr);
 let result = parser.match("100 * 100");
 
-// interface ParserResult<T extends typeof DelayAst> {
-//     ast?: InstanceType<T>;               // 生成的ast树，可通过判断是否为undefined，来判断是否成功
+// interface ParserResult<T> {
+//     ast?: T;                             // 生成的ast树，可通过判断是否为undefined，来判断是否成功
 //     ignoreAst: TerminalAst[];            // 被跳过的ast
 //     errorAst: Ast[];                     // 不符合语法规则的ast
 //     errorToken: Token[];                 // 不符合词法规则的token
