@@ -101,84 +101,14 @@ JSON.stringify(result);
 // =>
 // '{
 //     "ast": [
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/[0-9]+/",
-//             "token": {
-//                 "content": "100",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 0
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 3
-//                 }
-//             }
-//         },
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\*/",
-//             "token": {
-//                 "content": "*",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 4
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 5
-//                 }
-//             }
-//         },
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/[0-9]+/",
-//             "token": {
-//                 "content": "100",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 6
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 9
-//                 }
-//             }
-//         }
+//         { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 0 }, "end": { "row": 0, "col": 3 } } },
+//         { "name": "TerminalAst", "reg": "/\\*/", "token": { "content": "*", "start": { "row": 0, "col": 4 }, "end": { "row": 0, "col": 5 } } },
+//         { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 6 }, "end": { "row": 0, "col": 9 } } }
 //     ],
 //     "errors": [],
 //     "ignore": [
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\s+/",
-//             "token": {
-//                 "content": " ",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 3
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 4
-//                 }
-//             }
-//         },
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\s+/",
-//             "token": {
-//                 "content": " ",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 5
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 6
-//                 }
-//             }
-//         }
+//         { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 3 }, "end": { "row": 0, "col": 4 } } },
+//         { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 5 }, "end": { "row": 0, "col": 6 } } }
 //     ]
 // }'
 ```
@@ -202,111 +132,18 @@ JSON.stringify(result);
 // =>
 // '{
 //     "ast": [
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/[0-9]+/",
-//             "token": {
-//                 "content": "100",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 0
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 3
-//                 }
-//             }
-//         },
-//         {                                   // 此处多出了'00'
-//             "name": "TerminalAst",
-//             "reg": "/[0-9]+/",
-//             "token": {
-//                 "content": "00",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 4
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 6
-//                 }
-//             }
-//         },
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\*/",
-//             "token": {
-//                 "content": "*",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 7
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 8
-//                 }
-//             }
-//         },
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/[0-9]+/",
-//             "token": {
-//                 "content": "100",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 9
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 12
-//                 }
-//             }
-//         }
+//         { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 0 }, "end": { "row": 0, "col": 3 } } },
+//         // 此处多出了'00'
+//         { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "00", "start": { "row": 0, "col": 4 }, "end": { "row": 0, "col": 6 } } },
+//         { "name": "TerminalAst", "reg": "/\\*/", "token": { "content": "*", "start": { "row": 0, "col": 7 }, "end": { "row": 0, "col": 8 } } },
+//         { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 9 }, "end": { "row": 0, "col": 12 } } }
 //     ],
 //     "errors": [
-//         {                                   // 此处多出了'.'
-//             "content": ".",
-//             "start": {
-//                 "row": 0,
-//                 "col": 3
-//             },
-//             "end": {
-//                 "row": 0,
-//                 "col": 4
-//             }
-//         }
-//     ],
-//     "ignore": [
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\s+/",
-//             "token": {
-//                 "content": " ",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 6
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 7
-//                 }
-//             }
-//         },
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\s+/",
-//             "token": {
-//                 "content": " ",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 8
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 9
-//                 }
-//             }
-//         }
+//         // 此处多出了'.'
+//         { "content": ".", "start": { "row": 0, "col": 3 }, "end": { "row": 0, "col": 4 } }
+//     ], "ignore": [
+//         { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 6 }, "end": { "row": 0, "col": 7 } } },
+//         { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 8 }, "end": { "row": 0, "col": 9 } } }
 //     ]
 // }'
 ```
@@ -335,126 +172,32 @@ lex.on("end", () => console.log("end"));
 
 lex.match("100.00");
 // ast:
-// {
-//     "name": "TerminalAst",
-//     "reg": "/[0-9]+/",
-//     "token": {
-//         "content": "100",
-//         "start": {
-//             "row": 0,
-//             "col": 0
-//         },
-//         "end": {
-//             "row": 0,
-//             "col": 3
-//         }
-//     }
-// }
+// { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 0 }, "end": { "row": 0, "col": 3 } } }
 
 // error:
-// {
-//     "content": ".",
-//     "start": {
-//         "row": 0,
-//         "col": 3
-//     },
-//     "end": {
-//         "row": 0,
-//         "col": 4
-//     }
-// }
+// { "content": ".", "start": { "row": 0, "col": 3 }, "end": { "row": 0, "col": 4 } }
 
 // warning：此处并没有返回'00'，因为并不知道'00'后面是否有其他的数字
 
 lex.match(" *");
 // ast:
-// {
-//     "name": "TerminalAst",
-//     "reg": "/[0-9]+/",
-//     "token": {
-//         "content": "00",
-//         "start": {
-//             "row": 0,
-//             "col": 4
-//         },
-//         "end": {
-//             "row": 0,
-//             "col": 6
-//         }
-//     }
-// }
+// { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "00", "start": { "row": 0, "col": 4 }, "end": { "row": 0, "col": 6 } } }
 
 // ignore:
-// {
-//     "name": "TerminalAst",
-//     "reg": "/\\s+/",
-//     "token": {
-//         "content": " ",
-//         "start": {
-//             "row": 0,
-//             "col": 6
-//         },
-//         "end": {
-//             "row": 0,
-//             "col": 7
-//         }
-//     }
-// }
+// { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 6 }, "end": { "row": 0, "col": 7 } } }
 
 lex.match(" 100");
 // ast:
-// {
-//     "name": "TerminalAst",
-//     "reg": "/\\*/",
-//     "token": {
-//         "content": "*",
-//         "start": {
-//             "row": 0,
-//             "col": 7
-//         },
-//         "end": {
-//             "row": 0,
-//             "col": 8
-//         }
-//     }
-// }
+// { "name": "TerminalAst", "reg": "/\\*/", "token": { "content": "*", "start": { "row": 0, "col": 7 }, "end": { "row": 0, "col": 8 } } }
 
 // ignore:
-// {
-//     "name": "TerminalAst",
-//     "reg": "/\\s+/",
-//     "token": {
-//         "content": " ",
-//         "start": {
-//             "row": 0,
-//             "col": 8
-//         },
-//         "end": {
-//             "row": 0,
-//             "col": 9
-//         }
-//     }
-// }
+// { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 8 }, "end": { "row": 0, "col": 9 } } }
 
 // warning：此处也并没有返回'100'，理由同上
 
 lex.end();
 // ast:
-// {
-//     "name": "TerminalAst",
-//     "reg": "/[0-9]+/",
-//     "token": {
-//         "content": "100",
-//         "start": {
-//             "row": 0,
-//             "col": 9
-//         },
-//         "end": {
-//             "row": 0,
-//             "col": 12
-//         }
-//     }
-// }
+// { "name": "TerminalAst", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 9 }, "end": { "row": 0, "col": 12 } } }
 
 // end
 ```
@@ -574,84 +317,14 @@ console.log(JSON.stringify(result));
 //     "ast": {
 //         "name": "Expr",
 //         "children": [
-//             {
-//                 "name": "Num",
-//                 "reg": "/[0-9]+/",
-//                 "token": {
-//                     "content": "100",
-//                     "start": {
-//                         "row": 0,
-//                         "col": 0
-//                     },
-//                     "end": {
-//                         "row": 0,
-//                         "col": 3
-//                     }
-//                 }
-//             },
-//             {
-//                 "name": "Mul",
-//                 "reg": "/\\*/",
-//                 "token": {
-//                     "content": "*",
-//                     "start": {
-//                         "row": 0,
-//                         "col": 4
-//                     },
-//                     "end": {
-//                         "row": 0,
-//                         "col": 5
-//                     }
-//                 }
-//             },
-//             {
-//                 "name": "Num",
-//                 "reg": "/[0-9]+/",
-//                 "token": {
-//                     "content": "100",
-//                     "start": {
-//                         "row": 0,
-//                         "col": 6
-//                     },
-//                     "end": {
-//                         "row": 0,
-//                         "col": 9
-//                     }
-//                 }
-//             }
+//             { "name": "Num", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 0 }, "end": { "row": 0, "col": 3 } } },
+//             { "name": "Mul", "reg": "/\\*/", "token": { "content": "*", "start": { "row": 0, "col": 4 }, "end": { "row": 0, "col": 5 } } },
+//             { "name": "Num", "reg": "/[0-9]+/", "token": { "content": "100", "start": { "row": 0, "col": 6 }, "end": { "row": 0, "col": 9 } } }
 //         ]
 //     },
 //     "ignoreAst": [
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\s+/",
-//             "token": {
-//                 "content": " ",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 3
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 4
-//                 }
-//             }
-//         },
-//         {
-//             "name": "TerminalAst",
-//             "reg": "/\\s+/",
-//             "token": {
-//                 "content": " ",
-//                 "start": {
-//                     "row": 0,
-//                     "col": 5
-//                 },
-//                 "end": {
-//                     "row": 0,
-//                     "col": 6
-//                 }
-//             }
-//         }
+//         { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 3 }, "end": { "row": 0, "col": 4 } } },
+//         { "name": "TerminalAst", "reg": "/\\s+/", "token": { "content": " ", "start": { "row": 0, "col": 5 }, "end": { "row": 0, "col": 6 } } }
 //     ],
 //     "errorAst": [],
 //     "errorToken": []
