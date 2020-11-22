@@ -1,6 +1,6 @@
 export { UnreachableError } from "./utils/utils";
 
-export { DelayAst, TerminalAst } from "./Ast";
+export { DelayAst, TerminalAst, AstNoParentError, ParentError } from "./Ast";
 export type { MoreAst, OptionalAst, RepeatAst } from "./Ast";
 
 export { Lex, StreamLex } from "./Lex";

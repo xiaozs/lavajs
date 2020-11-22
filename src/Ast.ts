@@ -3,6 +3,26 @@ import type { TerminalRule } from "./Rule";
 import { UnreachableError } from "./utils/utils";
 
 /**
+ * 该Ast节点不存在父节点
+ */
+export class AstNoParentError extends Error {
+    constructor() {
+        super("该Ast节点不存在父节点");
+        Object.setPrototypeOf(this, this.constructor.prototype);
+    }
+}
+
+/**
+ * 该Ast节点父节点不能修改
+ */
+export class ParentError extends Error {
+    constructor() {
+        super("该Ast节点父节点不能修改");
+        Object.setPrototypeOf(this, this.constructor.prototype);
+    }
+}
+
+/**
  * 抽象语法树```Ast```的根父类
  */
 export abstract class Ast {
@@ -16,6 +36,30 @@ export abstract class Ast {
      * （应通过调用```JSON.stringify```来使用，不应该直接调用）
      */
     abstract toJSON(): object;
+    /**
+     * 当前Ast的父节点
+     */
+    private _parent: ChildrenAst<Ast[]> | null = null;
+    /**
+     * 当前Ast的父节点
+     */
+    get parent() {
+        return this._parent;
+    }
+    set parent(p: ChildrenAst<Ast[]> | null) {
+        if (this._parent && !(this instanceof TerminalAst)) throw new Error();
+        this._parent = p;
+    }
+    /**
+     * 将当前节点替换为新节点
+     * @param newAst 新节点
+     */
+    replaceWith(newAst: this): void {
+        if (!this.parent) throw new Error();
+        let index = this.parent.children.indexOf(this);
+        this.parent.children.splice(index, 1, newAst);
+        newAst.parent = this.parent;
+    }
 }
 
 /**
@@ -62,10 +106,13 @@ export class TerminalAst extends Ast {
  */
 export abstract class ChildrenAst<T extends Ast[]> extends Ast {
     /**
-     * @param children 包含子元素的数组
+     * @param children 子元素数组
      */
     constructor(public children: T) {
         super();
+        for (let child of children) {
+            child.parent = this;
+        }
     }
     toTerminalAst(): TerminalAst[] {
         let res: TerminalAst[] = [];
