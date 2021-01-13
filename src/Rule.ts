@@ -115,11 +115,11 @@ function getBnfParser() {
     orItem.define(item.and(or).and(item));
 
     item.define(
-        groupItem
-            .or(orItem)
-            .or(operatorItem)
+        simpleRule
             .or(andItem)
-            .or(simpleRule)
+            .or(operatorItem)
+            .or(orItem)
+            .or(groupItem)
     );
 
     return collection.getParser(item);
@@ -234,6 +234,13 @@ export class RuleCollection {
         return {
             rules: this.rules.map(it => it.toJSON())
         };
+    }
+
+    /**
+     * 规则集转换成字符串
+     */
+    toString() {
+        return JSON.stringify(this);
     }
 }
 
