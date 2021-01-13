@@ -103,6 +103,16 @@ export abstract class Matcher {
      * @param push 往执行匹配栈中插入规则的方法
      */
     abstract onChildrenResult(res: MatchResult, push: PushFn): MatchResult;
+    /**
+     * 方便使用```JSON.stringify```方法打印```Matcher```的规则的辅助方法
+     */
+    abstract toJSON(): object;
+    /**
+     * 规则转换成字符串
+     */
+    toString() {
+        return JSON.stringify(this);
+    }
 }
 
 /**
@@ -124,6 +134,11 @@ export class EndMatcher extends Matcher {
     }
     onChildrenResult(res: MatchResult, push: PushFn): MatchResult {
         throw new UnreachableError();
+    }
+    toJSON(): object {
+        return {
+            name: "$end"
+        }
     }
 }
 
@@ -159,6 +174,9 @@ export class TerminalMatcher extends Matcher {
     }
     onChildrenResult(res: MatchResult): MatchResult {
         throw new UnreachableError();
+    }
+    toJSON(): object {
+        return this.rule.toJSON();
     }
 }
 
@@ -203,6 +221,10 @@ export class DelayMatcher<A extends Ast[], R extends DelayAst<A>> extends Matche
         if (res.state === MatchState.success) {
             let ast = new this.delayRule.ast(res.ast as A);
             if (this.maybeLeftRecursion) {
+                // 如果该规则可能左递归
+                // 则该规则可能通过自身类型的Ast重入
+                // 以匹配该规则下的递归分支的规则
+                // 这里的代码是为了重入尝试匹配该分支的
                 this.cache = ast;
                 push(this.delayRule.rule);
                 return {
@@ -216,7 +238,11 @@ export class DelayMatcher<A extends Ast[], R extends DelayAst<A>> extends Matche
                 }
             }
         }
+
+        // 通过判断this.cache是否存在，
+        // 来判断是否是重入的
         if (res.state === MatchState.fail && this.cache) {
+            // 返回重入前的结果
             res.retry.shift();
             return {
                 state: MatchState.success,
@@ -225,6 +251,9 @@ export class DelayMatcher<A extends Ast[], R extends DelayAst<A>> extends Matche
             }
         }
         return res;
+    }
+    toJSON(): object {
+        return this.delayRule.toJSON();
     }
 }
 
@@ -287,6 +316,12 @@ export class AndMatcher extends Matcher {
         }
         return res;
     }
+    toJSON(): object {
+        return {
+            name: "$and",
+            rule: this.rules
+        }
+    }
 }
 
 /**
@@ -324,6 +359,12 @@ export class OrMatcher extends Matcher {
                 }
             }
             return res;
+        }
+    }
+    toJSON(): object {
+        return {
+            name: "$or",
+            rule: this.rules
         }
     }
 }
@@ -368,6 +409,12 @@ export class RepeatMatcher extends Matcher {
             }
         }
         return res;
+    }
+    toJSON(): object {
+        return {
+            name: "$repeat",
+            rule: this.rule
+        }
     }
 }
 
@@ -416,6 +463,12 @@ export class MoreMatcher extends Matcher {
         }
         return res;
     }
+    toJSON(): object {
+        return {
+            name: "$more",
+            rule: this.rule
+        }
+    }
 }
 
 /**
@@ -452,5 +505,11 @@ export class OptionalMatcher extends Matcher {
             }
         }
         return res;
+    }
+    toJSON(): object {
+        return {
+            name: "$more",
+            rule: this.rule
+        }
     }
 }

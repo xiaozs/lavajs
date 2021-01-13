@@ -60,6 +60,13 @@ export abstract class Ast {
         this.parent.children.splice(index, 1, newAst);
         newAst.parent = this.parent;
     }
+
+    /**
+     * 转化为字符串
+     */
+    toString() {
+        return JSON.stringify(this);
+    }
 }
 
 /**
