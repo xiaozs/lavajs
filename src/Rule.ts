@@ -166,6 +166,16 @@ export class RuleNotInCollectionError extends Error {
 }
 
 /**
+ * ```TerminalRule```规则不应匹配空字符的异常
+ */
+export class RuleMatchEmptyError extends Error {
+    constructor() {
+        super();
+        Object.setPrototypeOf(this, this.constructor.prototype);
+    }
+}
+
+/**
  * 规则集的类
  */
 export class RuleCollection {
@@ -412,6 +422,16 @@ export class TerminalRule extends Rule {
         }
 
         this.options = Object.assign({ ignore: false, ast: TerminalAst }, opt) as InnerTerminalOptions;
+
+        this.checkReg();
+    }
+
+    /**
+     * 检查正则表达式，其不能匹配空字符
+     */
+    private checkReg() {
+        let matchEmpty = this.options.reg.test("");
+        if (matchEmpty) throw new RuleMatchEmptyError();
     }
 
     /**
