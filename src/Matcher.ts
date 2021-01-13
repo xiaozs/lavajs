@@ -229,52 +229,23 @@ export class DelayMatcher<A extends Ast[], R extends DelayAst<A>> extends Matche
 }
 
 /**
- * ```AndMatcher```和```OrMatcher```执行状态的枚举
- */
-enum AndOrState {
-    /**刚初始化 */
-    init,
-    /**正执行匹配器左侧 */
-    left,
-    /**正执行匹配器右侧 */
-    right
-}
-
-/**
  * ```AndRule```对应的匹配器
  */
 export class AndMatcher extends Matcher {
     /**
-     * @param left 左侧规则
-     * @param right 右侧规则
+     * @param rules 规则集
      */
-    constructor(private left: Rule, private right: Rule) {
+    constructor(private rules: readonly Rule[]) {
         super();
     }
     /**
      * 执行状态
      */
-    private state = AndOrState.init;
-    /**
-     * 是否正在执行匹配器右侧
-     */
-    get isRight() {
-        return this.state === AndOrState.right;
-    }
-
+    private state = -1;
     match(ast: Ast, push: PushFn): MatchResult {
-        switch (this.state) {
-            case AndOrState.init:
-                push(this.left);
-                this.state = AndOrState.left;
-                break;
-            case AndOrState.left:
-                push(this.right);
-                this.state = AndOrState.right;
-                break
-            default:
-                throw new UnreachableError();
-        }
+        let currentRule = this.rules[++this.state];
+        if (!currentRule) throw new UnreachableError();
+        push(currentRule);
         return {
             state: MatchState.continue,
             retry: [ast]
@@ -282,37 +253,39 @@ export class AndMatcher extends Matcher {
     }
 
     /**
-     * 左侧匹配结果
+     * 是否不在匹配第一个规则
      */
-    private leftAst!: Ast[];
+    get isNotMatchingFirstRule() {
+        return this.state !== 0;
+    }
+
+    /**
+     * 已经匹配结果
+     */
+    private resAst: Ast[] = [];
     onChildrenResult(res: MatchResult): MatchResult {
-        switch (this.state) {
-            case AndOrState.left:
-                if (res.state === MatchState.success) {
-                    this.leftAst = res.ast;
-                    return {
-                        state: MatchState.continue,
-                        retry: res.retry
-                    }
+        if (res.state === MatchState.success) {
+            let isEnd = this.state === this.rules.length - 1;
+            if (isEnd) {
+                return {
+                    ...res,
+                    ast: this.resAst.concat(res.ast)
                 }
-                return res;
-            case AndOrState.right:
-                if (res.state === MatchState.success) {
-                    return {
-                        ...res,
-                        ast: this.leftAst.concat(res.ast)
-                    }
+            } else {
+                this.resAst.push(...res.ast);
+                return {
+                    state: MatchState.continue,
+                    retry: res.retry
                 }
-                if (res.state === MatchState.fail) {
-                    return {
-                        ...res,
-                        retry: this.leftAst.concat(res.retry)
-                    }
-                }
-                return res;
-            default:
-                throw new UnreachableError();
+            }
         }
+        if (res.state === MatchState.fail) {
+            return {
+                ...res,
+                retry: this.resAst.concat(res.retry)
+            }
+        }
+        return res;
     }
 }
 
@@ -321,48 +294,36 @@ export class AndMatcher extends Matcher {
  */
 export class OrMatcher extends Matcher {
     /**
-     * @param left 左侧规则
-     * @param right 右侧规则
+     * @param rules 规则集
      */
-    constructor(private left: Rule, private right: Rule) {
+    constructor(private rules: readonly Rule[]) {
         super();
     }
     /**
      * 执行状态
      */
-    private state = AndOrState.init;
+    private state = -1;
     match(ast: Ast, push: PushFn): MatchResult {
-        switch (this.state) {
-            case AndOrState.init:
-                push(this.left);
-                this.state = AndOrState.left;
-                break;
-            case AndOrState.left:
-                push(this.right);
-                this.state = AndOrState.right;
-                break
-            default:
-                throw new UnreachableError();
-        }
+        let currentRule = this.rules[++this.state];
+        if (!currentRule) throw new UnreachableError();
+        push(currentRule);
         return {
             state: MatchState.continue,
             retry: [ast]
         }
     }
     onChildrenResult(res: MatchResult): MatchResult {
-        switch (this.state) {
-            case AndOrState.left:
-                if (res.state === MatchState.fail) {
-                    return {
-                        ...res,
-                        state: MatchState.continue,
-                    }
+        let isEnd = this.state === this.rules.length - 1;
+        if (isEnd) {
+            return res;
+        } else {
+            if (res.state === MatchState.fail) {
+                return {
+                    ...res,
+                    state: MatchState.continue,
                 }
-                return res;
-            case AndOrState.right:
-                return res;
-            default:
-                throw new UnreachableError();
+            }
+            return res;
         }
     }
 }

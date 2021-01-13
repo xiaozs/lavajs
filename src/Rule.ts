@@ -291,14 +291,30 @@ export abstract class Rule {
      * @param rule 另一个规则
      */
     and(rule: Rule): Rule {
-        return new AndRule(this, rule);
+        if (this instanceof AndRule) {
+            if (rule instanceof AndRule) {
+                return new AndRule([...this.rules, ...rule.rules]);
+            } else {
+                return new AndRule([...this.rules, rule]);
+            }
+        } else {
+            return new AndRule([this, rule]);
+        }
     }
     /**
      * 生成一个新规则的方法，新规则需满足原规则，或满足另一个规则
      * @param rule 另一规则
      */
     or(rule: Rule): Rule {
-        return new OrRule(this, rule);
+        if (this instanceof OrRule) {
+            if (rule instanceof OrRule) {
+                return new OrRule([...this.rules, ...rule.rules]);
+            } else {
+                return new OrRule([...this.rules, rule]);
+            }
+        } else {
+            return new OrRule([this, rule]);
+        }
     }
     /**
      * 生成一个新规则的方法，新规则需满足原规则0到多次
@@ -338,6 +354,13 @@ export abstract class Rule {
      * @param rule 开始计算的规则
      */
     abstract maybeLeftRecursion(rule: DelayRule<any, any>): boolean;
+
+    /**
+     * 规则转换成字符串
+     */
+    toString() {
+        return JSON.stringify(this);
+    }
 }
 
 /**
@@ -542,39 +565,23 @@ export class DelayRule<A extends Ast[], R extends DelayAst<A>> extends Rule {
  */
 class AndRule extends Rule {
     /**
-     * @param left 左侧规则
-     * @param right 右侧规则
+     * @param rules 规则集
      */
-    constructor(private left: Rule, private right: Rule) {
+    constructor(readonly rules: readonly Rule[]) {
         super();
     }
     getMatcher(): Matcher {
-        return new AndMatcher(this.left, this.right);
+        return new AndMatcher(this.rules);
     }
-
-    /**
-     * 将连起来的连续的与规则的子规则放到一个数组里面的辅助方法
-     */
-    private getAnd() {
-        let res: Rule[] = [];
-        for (let it of [this.left, this.right]) {
-            if (it instanceof AndRule) {
-                res.push(...it.getAnd());
-            } else {
-                res.push(it);
-            }
-        }
-        return res;
-    }
-
     toJSON(): object {
         return {
             name: "$and",
-            rule: this.getAnd()
+            rule: this.rules
         }
     }
     maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
-        return this.left.maybeLeftRecursion(rule);
+        let first = this.rules[0];
+        return first.maybeLeftRecursion(rule);
     }
 }
 
@@ -583,39 +590,23 @@ class AndRule extends Rule {
  */
 class OrRule extends Rule {
     /**
-     * @param left 左侧规则
-     * @param right 右侧规则
+     * @param rules 规则集
      */
-    constructor(private left: Rule, private right: Rule) {
+    constructor(readonly rules: readonly Rule[]) {
         super();
     }
     getMatcher(): Matcher {
-        return new OrMatcher(this.left, this.right);
-    }
-
-    /**
-     * 将连起来的连续的或规则的子规则放到一个数组里面的辅助方法
-     */
-    private getOr() {
-        let res: Rule[] = [];
-        for (let it of [this.left, this.right]) {
-            if (it instanceof OrRule) {
-                res.push(...it.getOr());
-            } else {
-                res.push(it);
-            }
-        }
-        return res;
+        return new OrMatcher(this.rules);
     }
 
     toJSON(): object {
         return {
             name: "$or",
-            rule: this.getOr()
+            rule: this.rules
         }
     }
     maybeLeftRecursion(rule: DelayRule<any, any>): boolean {
-        return this.left.maybeLeftRecursion(rule);
+        return this.rules.some(it => it.maybeLeftRecursion(rule));
     }
 }
 

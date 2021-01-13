@@ -127,13 +127,13 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
      */
     private isLeftRecursion(): boolean {
         let iterator = this.stack.getReverseIterator();
-        let last = iterator.next().value as DelayMatcher<any, any>;
+        let delay = iterator.next().value as DelayMatcher<any, any>;
         for (let it of iterator) {
-            let isSameRule = it instanceof DelayMatcher && it.delayRule === last.delayRule;
+            let isSameRule = it instanceof DelayMatcher && it.delayRule === delay.delayRule;
             if (isSameRule) return true;
 
-            let isAndRight = it instanceof AndMatcher && it.isRight;
-            if (isAndRight) return false;
+            let notRecursion = it instanceof AndMatcher && it.isNotMatchingFirstRule
+            if (notRecursion) return false;
         }
         return false;
     }
