@@ -78,6 +78,7 @@ let div = collection.terminal({
     reg: "/",
     ast: Div
 })
+let test = Rule.bnf`${num} ${num} | ${num} ${num}`;
 
 // operator => add | sub | mul | div
 let operator = Rule.bnf`${add} | ${sub} | ${mul} | ${div}`;

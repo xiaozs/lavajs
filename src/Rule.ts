@@ -298,30 +298,18 @@ export abstract class Rule {
      * @param rule 另一个规则
      */
     and(rule: Rule): Rule {
-        if (this instanceof AndRule) {
-            if (rule instanceof AndRule) {
-                return new AndRule([...this.rules, ...rule.rules]);
-            } else {
-                return new AndRule([...this.rules, rule]);
-            }
-        } else {
-            return new AndRule([this, rule]);
-        }
+        let leftRules = this instanceof AndRule ? this.rules : [this];
+        let rightRules = rule instanceof AndRule ? rule.rules : [rule];
+        return new AndRule([...leftRules, ...rightRules]);
     }
     /**
      * 生成一个新规则的方法，新规则需满足原规则，或满足另一个规则
      * @param rule 另一规则
      */
     or(rule: Rule): Rule {
-        if (this instanceof OrRule) {
-            if (rule instanceof OrRule) {
-                return new OrRule([...this.rules, ...rule.rules]);
-            } else {
-                return new OrRule([...this.rules, rule]);
-            }
-        } else {
-            return new OrRule([this, rule]);
-        }
+        let leftRules = this instanceof OrRule ? this.rules : [this];
+        let rightRules = rule instanceof OrRule ? rule.rules : [rule];
+        return new OrRule([...leftRules, ...rightRules]);
     }
     /**
      * 生成一个新规则的方法，新规则需满足原规则0到多次

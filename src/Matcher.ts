@@ -220,7 +220,10 @@ export class DelayMatcher<A extends Ast[], R extends DelayAst<A>> extends Matche
     onChildrenResult(res: MatchResult, push: PushFn): MatchResult {
         if (res.state === MatchState.success) {
             let ast = new this.delayRule.ast(res.ast as A);
-            if (this.maybeLeftRecursion) {
+            if (this.maybeLeftRecursion &&
+                !(res.ast[0] instanceof MoreAst)
+                // todo, repeat 和 optional 呢？
+            ) {
                 // 如果该规则可能左递归
                 // 则该规则可能通过自身类型的Ast重入
                 // 以匹配该规则下的递归分支的规则
@@ -388,6 +391,14 @@ export class RepeatMatcher extends Matcher {
             retry: [ast]
         }
     }
+
+    /**
+     * 是否不在匹配第一次
+     */
+    get isNotMatchingFirstTime() {
+        return !!this.cache.length;
+    }
+
     /**
      * 已经匹配上的```Ast```的数组
      */
@@ -419,7 +430,7 @@ export class RepeatMatcher extends Matcher {
 }
 
 /**
- * ```RepeatRule```对应的匹配器
+ * ```MoreRule```对应的匹配器
  * 
  * 相当于```+```
  */
@@ -437,20 +448,30 @@ export class MoreMatcher extends Matcher {
             retry: [ast]
         }
     }
+
+    /**
+     * 是否不在匹配第一次
+     */
+    get isNotMatchingFirstTime() {
+        return !!this.cache.length;
+    }
+
     /**
      * 已经匹配上的```Ast```的数组
      */
     private cache: Ast[] = [];
     onChildrenResult(res: MatchResult, push: PushFn): MatchResult {
         if (res.state === MatchState.fail) {
-            if (this.cache.length) {
+            if ([0, 1].includes(this.cache.length)) {
                 return {
-                    state: MatchState.success,
-                    ast: [new MoreAst(this.cache)],
-                    retry: res.retry
+                    ...res,
+                    retry: [...this.cache, ...res.retry]
                 }
-            } else {
-                return res;
+            }
+            return {
+                state: MatchState.success,
+                ast: [new MoreAst(this.cache)],
+                retry: res.retry
             }
         }
         if (res.state === MatchState.success) {

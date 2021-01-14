@@ -1,6 +1,6 @@
 import { Ast, DelayAst, EndAst, TerminalAst } from "./Ast";
 import { StreamLex, Token } from "./Lex";
-import { AndMatcher, DelayMatcher, Matcher, MatchResult, MatchState } from "./Matcher";
+import { AndMatcher, DelayMatcher, Matcher, MatchResult, MatchState, MoreMatcher, RepeatMatcher } from "./Matcher";
 import { DelayRule, EndRule, Rule, TerminalRule } from "./Rule";
 import { EventEmmiter } from "./utils/EventEmmiter";
 import { List } from "./utils/List";
@@ -132,7 +132,12 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
             let isSameRule = it instanceof DelayMatcher && it.delayRule === delay.delayRule;
             if (isSameRule) return true;
 
-            let notRecursion = it instanceof AndMatcher && it.isNotMatchingFirstRule
+            let notRecursion =
+                (it instanceof AndMatcher && it.isNotMatchingFirstRule)
+
+                // todo，这两个判断究竟有没有用？
+                || (it instanceof MoreMatcher && it.isNotMatchingFirstTime)
+                || (it instanceof RepeatMatcher && it.isNotMatchingFirstTime)
             if (notRecursion) return false;
         }
         return false;
@@ -217,7 +222,7 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
                     if (lastAst) {
                         res.retry.push(...lastAst.toTerminalAst());
                     }
-                    this.retry(res.retry);
+                    this.setRetry(res.retry);
                     this.stack.push(this.root.getMatcher());
                     continue;
                 }
@@ -238,7 +243,7 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
         loop: while (true) {
             switch (res.state) {
                 case MatchState.continue:
-                    this.retry(res.retry);
+                    this.setRetry(res.retry);
                     break loop;
                 case MatchState.success:
                 case MatchState.fail:
@@ -260,7 +265,7 @@ export class StreamParser<A extends Ast[], R extends DelayAst<A>>
      * 对```Ast```进行重新匹配的方法
      * @param ast 需要重新匹配的```Ast```的数组
      */
-    private retry(ast?: Ast[]) {
+    private setRetry(ast?: Ast[]) {
         this.astArr.unshift(...ast ?? []);
     }
 
